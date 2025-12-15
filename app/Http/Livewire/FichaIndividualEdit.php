@@ -1130,8 +1130,8 @@ class FichaIndividualEdit extends Component
                 ]);
             }
             $this->departamentootros = "08";
-            $this->provinciaotros = "01";
-            $this->distritootros = "08";
+            $this->provinciaotros = "06";
+            $this->distritootros = "01";
             
 
             foreach ($this->tipopuerta as $i => $tipovia) {

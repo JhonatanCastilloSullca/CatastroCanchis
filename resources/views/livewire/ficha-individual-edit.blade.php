@@ -3709,7 +3709,7 @@
                 $('#provinciaotros').empty();
                 $('#provinciaotros').append("<option value='06' >CANCHIS</option>");
                 $('#distritootros').empty();
-                $('#distritootros').append("<option value='01' >CANCHIS</option>");
+                $('#distritootros').append("<option value='01' >SICUANI</option>");
             } else {
                 $('#departamentootros').empty();
                 $('#departamentootros').append("<option value='' >SELECCIONE</option>");
