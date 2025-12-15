@@ -417,7 +417,7 @@
                                 <div class="mb-3">
                                     <div wire:ignore>
                                         <label class="form-label d-inline-flex">
-                                            <div class="divcuadrorequired">14</div> CÓDIGO URBANO
+                                            <div class="divcuadro">14</div> CÓDIGO URBANO
                                         </label>
                                         
                                         <select class="form-select " id="hab_urbana_id" name="hab_urbana_id"

@@ -447,7 +447,7 @@
                             <div class="col-md-3">
                                 <div class="mb-3">
                                     <label class="form-label d-inline-flex">
-                                        <div class="divcuadrorequired">15</div> NOMBRE DE LA HABILITACIÓN URBANA
+                                        <div class="divcuadro">15</div> NOMBRE DE LA HABILITACIÓN URBANA
                                     </label>
                                     <input type="text" class="form-control" name="nomb_hab_urba" readonly
                                         placeholder="Nombre Habilitacion Urbana" wire:model="nomb_hab_urba"

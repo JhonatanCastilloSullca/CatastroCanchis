@@ -1132,7 +1132,7 @@ class FichaIndividualCreate extends Component
                         'tipo_interior'                 => 'nullable',
                         'nume_interior'                 => 'nullable|max:15',
 
-                        'tipoHabi'                      => 'required',
+                        'tipoHabi'                      => 'nullable',
                         'zona_dist'                     => 'nullable|max:30',
                         'mzna_dist'                     => 'nullable|max:15',
                         'lote_dist'                     => 'nullable|max:5',
@@ -1233,7 +1233,7 @@ class FichaIndividualCreate extends Component
                         'unidad'                        => 'required|max:3',
                         'codi_cont_rentas'              => 'nullable|max:15',
                         'codi_pred_rentas'              => 'nullable|max:15',
-                        'tipoHabi'                      => 'required',
+                        'tipoHabi'                      => 'nullable',
                         'zona_dist'                     => 'nullable|max:30',
                         'mzna_dist'                     => 'nullable|max:15',
                         'lote_dist'                     => 'nullable|max:5',
