@@ -1036,7 +1036,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label d-inline-flex">
-                                        <div class="divcuadrorequired">37</div> CONDICION DEL TITULAR
+                                        <div class="divcuadro">37</div> CONDICION DEL TITULAR
                                     </label>
                                     <select class="form-select" data-width="100%" data-live-search="true"
                                         name="cond_titular" id="cond_titular" wire:model="condtitular"

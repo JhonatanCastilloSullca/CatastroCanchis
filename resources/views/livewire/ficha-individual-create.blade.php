@@ -1039,7 +1039,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label d-inline-flex">
-                                        <div class="divcuadrorequired">37</div> CONDICION DEL TITULAR
+                                        <div class="divcuadro">37</div> CONDICION DEL TITULAR
                                     </label>
                                     <select class="form-select" data-width="100%" data-live-search="true"
                                         name="cond_titular" id="cond_titular" wire:model="condtitular"
@@ -1058,7 +1058,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label d-inline-flex">
-                                        <div class="divcuadrorequired">38</div> FORMA DE ADQUISICION
+                                        <div class="divcuadro">38</div> FORMA DE ADQUISICION
                                     </label>
                                     <select class="form-select" data-width="100%" data-live-search="true"
                                         name="form_adquisicion" id="form_adquisicion" wire:model="form_adquisicion"
