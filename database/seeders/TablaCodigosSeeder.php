@@ -25,7 +25,7 @@ class TablaCodigosSeeder extends Seeder
             ['codigo'=>'05'	        ,'id_tabla'=>'DCF'	,'desc_codigo'=>'CONTRATO DE PRESTAMO CON INSTITUCIONES'],
             ['codigo'=>'11'	        ,'id_tabla'=>'DCF'	,'desc_codigo'=>'PARTIDA DE DEFUNCION'],
             ['codigo'=>'05'	        ,'id_tabla'=>'TPC'	,'desc_codigo'=>'INVITADO'],
-            ['codigo'=>'05'	        ,'id_tabla'=>'ARE'	,'desc_codigo'=>'CONTROL CALIDAD DISTRITAL'],
+            ['codigo'=>'05'	        ,'id_tabla'=>'ARE'	,'desc_codigo'=>'CONTROL CALIDAD PROVINCIAL'],
             ['codigo'=>'07'	        ,'id_tabla'=>'ARE'	,'desc_codigo'=>'PROGRAMACION GENERAL'],
             ['codigo'=>'08'	        ,'id_tabla'=>'ARE'	,'desc_codigo'=>'SUPERVISION'],
             ['codigo'=>'09'	        ,'id_tabla'=>'ARE'	,'desc_codigo'=>'PROGRAMACION POR AREA'],
@@ -492,7 +492,7 @@ class TablaCodigosSeeder extends Seeder
             ['codigo'=>'42'         ,'id_tabla'=>'ZON'  ,'desc_codigo'=>'ZONAS DE PROTECCION Y CONSERVACION ECOLOGICA'],
             ['codigo'=>'43'         ,'id_tabla'=>'ZON'  ,'desc_codigo'=>'ZRE-ZONA DE REGLAMENTACION ESPECIAL'],
             ['codigo'=>'44'         ,'id_tabla'=>'ZON'  ,'desc_codigo'=>'ZRP 1 ZONA DE RECREACION BARRIAL'],
-            ['codigo'=>'45'         ,'id_tabla'=>'ZON'  ,'desc_codigo'=>'ZRP 2 ZONA DE RECREACION DISTRITAL'],
+            ['codigo'=>'45'         ,'id_tabla'=>'ZON'  ,'desc_codigo'=>'ZRP 2 ZONA DE RECREACION PROVINCIAL'],
             ['codigo'=>'46'         ,'id_tabla'=>'ZON'  ,'desc_codigo'=>'ZRP 3 ZONA DE RECREACION METROPOLITANO'],
 
 

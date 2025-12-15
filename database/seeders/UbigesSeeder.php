@@ -824,7 +824,7 @@ class UbigesSeeder extends Seeder
             ['cod_dep'=>'08'	,'cod_pro'=>'05'	, 'codi_dis'=>'07'	, 'descri'=>'QUEHUE'],
             ['cod_dep'=>'08'	,'cod_pro'=>'05'	, 'codi_dis'=>'08'	, 'descri'=>'TUPAC AMARU'],
             ['cod_dep'=>'08'	,'cod_pro'=>'06'	, 'codi_dis'=>'00'	, 'descri'=>'CANCHIS'],
-            ['cod_dep'=>'08'	,'cod_pro'=>'06'	, 'codi_dis'=>'01'	, 'descri'=>'SICUANI'],
+            ['cod_dep'=>'08'	,'cod_pro'=>'06'	, 'codi_dis'=>'01'	, 'descri'=>'CANCHIS'],
             ['cod_dep'=>'08'	,'cod_pro'=>'06'	, 'codi_dis'=>'02'	, 'descri'=>'CHECACUPE'],
             ['cod_dep'=>'08'	,'cod_pro'=>'06'	, 'codi_dis'=>'03'	, 'descri'=>'COMBAPATA'],
             ['cod_dep'=>'08'	,'cod_pro'=>'06'	, 'codi_dis'=>'04'	, 'descri'=>'MARANGANI'],

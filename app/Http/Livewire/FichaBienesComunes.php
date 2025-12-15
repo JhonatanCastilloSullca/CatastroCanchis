@@ -46,8 +46,8 @@ class FichaBienesComunes extends Component
     public $nume_ficha_lote2;
     public $cuc;
     public $dpto='08';
-    public $prov='01';
-    public $dist='08';
+    public $prov='06';
+    public $dist='01';
     public $sector;
     public $mzna;
     public $lote;
@@ -314,7 +314,7 @@ class FichaBienesComunes extends Component
         ]);
 
         $this->dc = ($this->dpto + $this->prov + $this->dist + $this->sector + $this->mzna + $this->lote + $this->edifica + $this->entrada + $this->piso + $this->unidad) % 9;
-        $codicatastral = '080108' . $this->sector . $this->mzna . $this->lote . $this->edifica . $this->entrada . $this->piso . $this->unidad;
+        $codicatastral = '080601' . $this->sector . $this->mzna . $this->lote . $this->edifica . $this->entrada . $this->piso . $this->unidad;
 
         $exists = Ficha::where('id_uni_cat', $codicatastral)->exists();
 

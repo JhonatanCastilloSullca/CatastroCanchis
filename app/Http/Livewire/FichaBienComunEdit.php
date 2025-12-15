@@ -47,8 +47,8 @@ class FichaBienComunEdit extends Component
     public $nume_ficha_lote2;
     public $cuc;
     public $dpto='08';
-    public $prov='01';
-    public $dist='08';
+    public $prov='06';
+    public $dist='01';
     public $sector;
     public $mzna;
     public $lote;

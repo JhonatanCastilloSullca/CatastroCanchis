@@ -1029,7 +1029,7 @@
                             <div class="col-md-4">
                                 <div class="lineatoggle">
                                     <div>
-                                        <label class="extendtext form-label d-inline-flex" >CONSTANCIA DE POSESION OTORGADA POR LA AGENCIA AGRARIA O MUNICIPALIDAD DISTRITAL RESPECTIVA</label>
+                                        <label class="extendtext form-label d-inline-flex" >CONSTANCIA DE POSESION OTORGADA POR LA AGENCIA AGRARIA O MUNICIPALIDAD PROVINCIAL RESPECTIVA</label>
                                     </div>
                                     <div style="padding-left: 10px;">
                                         <div class="form-check form-switch mb-2">

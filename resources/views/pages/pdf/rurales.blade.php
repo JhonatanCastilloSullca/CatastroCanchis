@@ -1936,7 +1936,7 @@
               14
             </div>
             <div class="texto fz5 lh8">
-              CONSTANCIA DE POSESION OTORGADA POR LA AGENCIA AGRARIA O MUNICIPALIDAD DISTRITAL RESPECTIVA
+              CONSTANCIA DE POSESION OTORGADA POR LA AGENCIA AGRARIA O MUNICIPALIDAD PROVINCIAL RESPECTIVA
             </div>
           </div>
           <div style="width: 18px;height: 32px;float:left;" class="texto2 fz8 lh14">

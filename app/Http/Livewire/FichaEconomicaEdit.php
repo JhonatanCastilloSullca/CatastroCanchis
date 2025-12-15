@@ -43,8 +43,8 @@ class FichaEconomicaEdit extends Component
     public $codi_hoja_catastral;
     public $cuc;
     public $dpto=8;
-    public $prov=1;
-    public $dist=8;
+    public $prov=6;
+    public $dist=1;
     public $sector;
     public $mzna;
     public $lote;

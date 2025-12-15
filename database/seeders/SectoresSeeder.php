@@ -17,8 +17,8 @@ class SectoresSeeder extends Seeder
     public function run()
     {
         $sectores = [
-            ['id_sector'=>'08010807','id_ubi_geo'=>'080108', 'codi_sector'=>'07', 'nomb_sector'=>'SECTOR 07', 'fichaindividual'=>'0', 'fichacotitular'=>'0', 'fichaeconomica'=>'0', 'fichabiencomun'=>'0', 'fichacultural'=>'0', 'ficharural'=>'0', 'estado'=>'1'],
-            ['id_sector'=>'08010808','id_ubi_geo'=>'080108', 'codi_sector'=>'08', 'nomb_sector'=>'SECTOR 08', 'fichaindividual'=>'0', 'fichacotitular'=>'0', 'fichaeconomica'=>'0', 'fichabiencomun'=>'0', 'fichacultural'=>'0', 'ficharural'=>'0', 'estado'=>'1'],
+            ['id_sector'=>'08060107','id_ubi_geo'=>'080601', 'codi_sector'=>'07', 'nomb_sector'=>'SECTOR 07', 'fichaindividual'=>'0', 'fichacotitular'=>'0', 'fichaeconomica'=>'0', 'fichabiencomun'=>'0', 'fichacultural'=>'0', 'ficharural'=>'0', 'estado'=>'1'],
+            ['id_sector'=>'08060108','id_ubi_geo'=>'080601', 'codi_sector'=>'08', 'nomb_sector'=>'SECTOR 08', 'fichaindividual'=>'0', 'fichacotitular'=>'0', 'fichaeconomica'=>'0', 'fichabiencomun'=>'0', 'fichacultural'=>'0', 'ficharural'=>'0', 'estado'=>'1'],
             
             
         ];

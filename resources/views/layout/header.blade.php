@@ -6,7 +6,7 @@
         <form class="search-form">
             <div class="input-group">
                 <img class="wd-40 ht-40 mt-3 " src="{{ asset('img/logomuni.png') }}" alt="Logo Muni">
-                <p class="fw-bolder px-4" style="line-height: 70px;font-size: 20px;">MUNICIPALIDAD DISTRITAL DE SICUANI
+                <p class="fw-bolder px-4" style="line-height: 70px;font-size: 20px;">MUNICIPALIDAD PROVINCIAL DE CANCHIS
                 </p>
             </div>
         </form>

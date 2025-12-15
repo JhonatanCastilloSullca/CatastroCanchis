@@ -17,8 +17,8 @@ class InstitucionSeeder extends Seeder
     public function run()
     {
         Institucion::create([
-            'id_institucion' => '080108',
-            'desc_institucion' => 'MUNICIPALIDAD DISTRITAL DE SICUANI',
+            'id_institucion' => '080601',
+            'desc_institucion' => 'MUNICIPALIDAD PROVINCIAL DE CANCHIS',
             'dire_institucion' => NULL,
             'email' => NULL,
             'autoridad' => NULL,

@@ -3702,14 +3702,14 @@
         $('#ubicacionpersona').change(agregarValores);
 
         function agregarValores() {
-//SICUANI CANCHIS
+//CANCHIS CANCHIS
             if ($("#ubicacionpersona option:selected").val() == "01") {
                 $('#departamentootros').empty();
                 $('#departamentootros').append("<option value='08' >CUSCO</option>");
                 $('#provinciaotros').empty();
                 $('#provinciaotros').append("<option value='06' >CANCHIS</option>");
                 $('#distritootros').empty();
-                $('#distritootros').append("<option value='01' >SICUANI</option>");
+                $('#distritootros').append("<option value='01' >CANCHIS</option>");
             } else {
                 $('#departamentootros').empty();
                 $('#departamentootros').append("<option value='' >SELECCIONE</option>");

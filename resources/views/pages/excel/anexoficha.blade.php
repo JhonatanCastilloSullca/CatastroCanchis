@@ -21,7 +21,7 @@
                             <tr>
                                 <td colspan="7">
                                     <h3 class="text-uppercase m0">
-                                        MUNICIPALIDAD DISTRITAL DE SICUANI
+                                        MUNICIPALIDAD PROVINCIAL DE CANCHIS
                                     </h3>
                                 </td>
                             </tr>
@@ -47,7 +47,7 @@
                             <tr>
                             </tr>
                             <tr>
-                                <td colspan="2"><b>CUSCO / CANCHIS / SICUANI</b> </td>
+                                <td colspan="2"><b>CUSCO / CANCHIS / CANCHIS</b> </td>
                             </tr>
                             <tr>
                                 <td>SECTOR: </td>

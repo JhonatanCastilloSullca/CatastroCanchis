@@ -51,8 +51,8 @@ class FichaIndividualCreate extends Component
     public $nume_ficha_lote2;
     public $cuc;
     public $dpto = '08';
-    public $prov = '01';
-    public $dist = '08';
+    public $prov = '06';
+    public $dist = '01';
     public $sector;
     public $mzna;
     public $lote;
@@ -342,7 +342,7 @@ class FichaIndividualCreate extends Component
         ]);
 
         $this->dc = ($this->dpto + $this->prov + $this->dist + $this->sector + $this->mzna + $this->lote + $this->edifica + $this->entrada + $this->piso + $this->unidad) % 9;
-        $codicatastral = '080108' . $this->sector . $this->mzna . $this->lote . $this->edifica . $this->entrada . $this->piso . $this->unidad;
+        $codicatastral = '080601' . $this->sector . $this->mzna . $this->lote . $this->edifica . $this->entrada . $this->piso . $this->unidad;
         $exists = Ficha::where('id_uni_cat', $codicatastral)->exists();
         
 
@@ -661,7 +661,7 @@ class FichaIndividualCreate extends Component
                 if ($tipovia == "P") {
                     if (isset($this->tipoVia[$i])) {
                         if ($this->tipoVia[$i] != "") {
-                            $this->codigoviaotros = str_replace('080108', '', $this->tipoVia[$i]);
+                            $this->codigoviaotros = str_replace('080601', '', $this->tipoVia[$i]);
                         }
                     }
                     if (isset($this->tipoViatipo[$i])) {
@@ -683,7 +683,7 @@ class FichaIndividualCreate extends Component
                         $this->ninteriorotros = $this->nume_interior;
                     }
                     if ($this->tipoHabi != "") {
-                        $this->codigohurbanootros = str_replace('080108', '', $this->tipoHabi);
+                        $this->codigohurbanootros = str_replace('080601', '', $this->tipoHabi);
                     }
                     if ($this->nomb_hab_urba != "") {
                         $this->nombrehhurbanaotros = $this->nomb_hab_urba;

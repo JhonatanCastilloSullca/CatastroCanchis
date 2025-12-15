@@ -550,7 +550,7 @@
 
     <div style="width: 716px;height:20px; margin-top:5px; float:left;" class="bn ">
         <div class="texto fz8 lh14">
-            La gerencia de Desarrollo Urbano; através de la Sub Gerencia de Planeamiento, Fiscalización Urbana y Catastro de la MUNICIPALIDAD DISTRITAL DE SICUANI, en atención al Expediente N°: {{ $ficha->id }} y a la Ficha N°: {{ $ficha->id_ficha }} asigna la siguiente numeración de finca:
+            La gerencia de Desarrollo Urbano; através de la Sub Gerencia de Planeamiento, Fiscalización Urbana y Catastro de la MUNICIPALIDAD PROVINCIAL DE CANCHIS, en atención al Expediente N°: {{ $ficha->id }} y a la Ficha N°: {{ $ficha->id_ficha }} asigna la siguiente numeración de finca:
         </div>
     </div>
 
