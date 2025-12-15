@@ -307,7 +307,7 @@ class FichaIndividualEdit extends Component
         $idhaburb = $fichaanterior?->lote?->id_hab_urba;
         $nomb_hab_urba1 = HabUrbana::where('id_hab_urba', '=', $idhaburb)?->first();
         $nomb_hab_urba2 = $nomb_hab_urba1?->nomb_hab_urba;        
-        $this->nomb_hab_urba = $nomb_hab_urba1->tipo_hab_urba.''.$nomb_hab_urba2;
+        $this->nomb_hab_urba = $nomb_hab_urba1 ? $nomb_hab_urba1->tipo_hab_urba.''.$nomb_hab_urba2 : "";
 
         $this->zona_dist = $fichaanterior?->lote?->zona_dist;
         $this->mzna_dist = $fichaanterior?->lote?->mzna_dist;
