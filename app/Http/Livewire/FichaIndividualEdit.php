@@ -303,7 +303,7 @@ class FichaIndividualEdit extends Component
         $this->dc = $fichaanterior?->dc;
         $this->codi_cont_rentas = $fichaanterior?->unicat?->codi_cont_rentas;
         $this->codi_pred_rentas = $fichaanterior?->unicat?->codi_pred_rentas;
-        $this->tipoHabi = str_pad($fichaanterior?->lote?->id_hab_urba, 10, '0', STR_PAD_LEFT);
+        $this->tipoHabi = $fichaanterior?->lote?->id_hab_urba ? $fichaanterior?->lote?->id_hab_urba : null;
         $idhaburb = $fichaanterior?->lote?->id_hab_urba;
         $nomb_hab_urba1 = HabUrbana::where('id_hab_urba', '=', $idhaburb)?->first();
         $nomb_hab_urba2 = $nomb_hab_urba1?->nomb_hab_urba;        
