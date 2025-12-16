@@ -67,11 +67,11 @@
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label labelpeque" >PROV.</label>
-                                    <input type="text" class="form-control" name="prov" readonly value="01">
+                                    <input type="text" class="form-control" name="prov" readonly value="06">
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label labelpeque" >DIST.</label>
-                                    <input type="text" class="form-control" name="dist" readonly value="08">
+                                    <input type="text" class="form-control" name="dist" readonly value="01">
                                 </div>
                             </div>
                             <div class="col-md-1">
@@ -884,7 +884,7 @@
                                 <span class="error-message" style="color:red">{{ $message }}</span>
                             @enderror
                             <label class="form-label d-inline-flex" > FECHA</label>
-                            <input type="date" class="form-control" name="fecha_verificacion" wire:model="fecha_verificacion" max="{{ date('Y-m-d') }}">
+                            <input type="date" class="form-control" name="fecha_verificacion" wire:model="fecha_verificacion" >
                             @error('fecha_verificacion')
                                 <span class="error-message" style="color:red">{{ $message }}</span>
                             @enderror

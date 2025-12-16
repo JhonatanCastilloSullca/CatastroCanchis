@@ -1308,19 +1308,19 @@ class FichaIndividualEdit extends Component
                     'departamentootros'             => 'nullable',
                     'provinciaotros'                => 'nullable',
                     'distritootros'                 => 'nullable',
-                    'codigoviaotros'                => 'nullable|max:6',
-                    'tipoviaotros'                  => 'nullable|max:5',
+                    'codigoviaotros'                => 'nullable|max:16',
+                    'tipoviaotros'                  => 'nullable|max:15',
                     'nombreviaotros'                => 'nullable|max:100',
-                    'nmunicipalotros'               => 'nullable|max:6',
-                    'ninteriorotros'                => 'nullable|max:5',
-                    'codigohurbanootros'            => 'nullable|max:4',
+                    'nmunicipalotros'               => 'nullable|max:16',
+                    'ninteriorotros'                => 'nullable|max:15',
+                    'codigohurbanootros'            => 'nullable|max:14',
                     'nombrehhurbanaotros'           => 'nullable|max:100',
                     'zonaootros'                    => 'nullable|max:50',
-                    'manzanaotros'                  => 'nullable|max:5',
-                    'loteotros'                     => 'nullable|max:5',
-                    'subloteotros'                  => 'nullable|max:5',
+                    'manzanaotros'                  => 'nullable|max:15',
+                    'loteotros'                     => 'nullable|max:15',
+                    'subloteotros'                  => 'nullable|max:15',
                     'telefonodomicilio'             => 'nullable|max:10',
-                    'anexodomicilio'                => 'nullable|max:5',
+                    'anexodomicilio'                => 'nullable|max:15',
                     'emaildomicilio'                => 'nullable|max:100',
                     'clasificacion'                 => 'required',
                     'cont_en'                       => 'required',
@@ -1816,7 +1816,9 @@ class FichaIndividualEdit extends Component
 
                 $contpuertas++;
                 $puerta->fichas()->attach(str_pad($ficha->id_ficha, 19, '0', STR_PAD_LEFT));
-                $puerta->via->hab_urbanas()->attach($this->tipoHabi);
+                if($this->tipoHabi){
+                    $puerta->via->hab_urbanas()->attach($this->tipoHabi);
+                }
             }
 
             if ($this->condtitular != "05") {

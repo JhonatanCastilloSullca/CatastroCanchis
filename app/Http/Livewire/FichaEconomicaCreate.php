@@ -276,7 +276,7 @@ class FichaEconomicaCreate extends Component
                     'nume_ficha_lote'               => 'required|max:4',
                     'nume_ficha_lote2'              => 'required|max:5',
                     'codi_hoja_catastral'           => 'nullable|max:10',
-                    'tipoConductor'                 => 'required',
+                    'tipoConductor'                 => 'nullable',
                     'nomb_comercial'                => 'nullable|max:100',
 
                     'tipo_doc1'                     => 'nullable',
@@ -287,10 +287,10 @@ class FichaEconomicaCreate extends Component
                     'numedoc3'                      => 'nullable|max:17',
                     'razon_social'                 => 'nullable|max:100',
 
-                    'cond_conductor'                => 'required',
-                    'deparamentoconductor'          => 'required',
-                    'provinciaconductor'            => 'required',
-                    'distritoconductor'             => 'required',
+                    'cond_conductor'                => 'nullable',
+                    'deparamentoconductor'          => 'nullable',
+                    'provinciaconductor'            => 'nullable',
+                    'distritoconductor'             => 'nullable',
                     'telefonoconductor'             => 'nullable|max:10',
                     'anexoconductor'                => 'nullable|max:5',
                     'faxconductor'                  => 'nullable|max:10',
