@@ -386,10 +386,10 @@
                             08
                         </div>
                         <div style="width: 34px;height: 16px;float:left;" class="texto2 fz8 lh14">
-                            01
+                            06
                         </div>
                         <div style="width: 34.9px;height: 16px;float:left;" class="texto2 fz8 lh14">
-                            8
+                            01
                         </div>
                     </div>
                 </div>

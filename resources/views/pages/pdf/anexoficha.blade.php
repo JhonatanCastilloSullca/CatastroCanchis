@@ -382,7 +382,7 @@
     </div>
     <div style="width: 716px;height:20px;  float:left;" class="bn">
         <div style="width: 716px;height:20px;  float:left;text-align:left;" class="texto fz10 lh10">
-            <b>DISTRITO:</b> CANCHIS
+            <b>DISTRITO:</b> SICUANI
         </div>
     </div>
     <div style="width: 716px;height:20px;  float:left;" class="bn">

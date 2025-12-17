@@ -23,9 +23,9 @@
                 </div>
                 <div class="col-md-5">
                     <div class="input-group" id="buscarFecha">
-                        <input type="date" id="buscarFechaInicio" name="buscarFechaInicio" class="form-control" placeholder="Fecha Inicio" value="{{$fechainicio}}">
+                        <input type="date" id="buscarFechaInicio" name="buscarFechaInicio" class="form-control" placeholder="Fecha Inicio" value="{{$fechainicio}}" required>
                         <label style="padding-top: 10px"><strong> &nbsp;&nbsp; / &nbsp;&nbsp;</strong></label>
-                        <input type="date" id="buscarFechaFin" name="buscarFechaFin" class="form-control" placeholder="Fecha Fin"  value="{{$fechafin}}">
+                        <input type="date" id="buscarFechaFin" name="buscarFechaFin" class="form-control" placeholder="Fecha Fin"  value="{{$fechafin}}" required>
 
                     </div>
                     <br>
@@ -39,7 +39,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="input-group" id="">
-                        <select class="form-control" id="buscarUsuario" name="buscarUsuario"  data-live-search="true">
+                        <select class="form-control" id="buscarUsuario" name="buscarUsuario"  data-live-search="true" required>
                             <option value="0" {{ $usuario2 == '0' ? 'selected' : '' }} >TODOS</option>
                             @foreach($usuarios as $usuario)
                                 <option value="{{$usuario->id_usuario}}" {{ $usuario2 == $usuario->id_usuario ? 'selected' : '' }} >{{$usuario->usuario}} {{$usuario->nombres}} </option>
