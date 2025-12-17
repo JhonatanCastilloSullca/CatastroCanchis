@@ -1081,7 +1081,7 @@ class FichaIndividualCreate extends Component
                     'tipo_edificacion'              => 'nullable',
                     'tipo_interior'                 => 'nullable',
                     'nume_interior'                 => 'nullable|max:15',
-                    'tipoHabi'                      => 'required',
+                    'tipoHabi'                      => 'nullable',
                     'zona_dist'                     => 'nullable|max:30',
                     'mzna_dist'                     => 'nullable|max:15',
                     'lote_dist'                     => 'nullable|max:5',
