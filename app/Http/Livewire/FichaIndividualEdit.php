@@ -386,7 +386,7 @@ class FichaIndividualEdit extends Component
                 $this->fecha_adquisicion = $fichaanterior?->titular?->fecha_adquisicion;
             }
         } else {
-            $this->condtitular = "05";
+            $this->condtitular = null;
         }
 
         $this->clasificacion = $fichaanterior?->fichaindividual?->clasificacion;

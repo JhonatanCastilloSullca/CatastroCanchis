@@ -531,7 +531,7 @@ class FichaBienesCulturales extends Component
                 'supervisor'                                => 'nullable',
                 'fecha_supervision'                         => 'nullable|date',
                 'tecnico'                                   => 'required',
-                'fecha_levantamiento'           => 'required|date|before_or_equal:today',
+                'fecha_levantamiento'           => 'required|date',
                 'verificador'                               => 'nullable',
                 'nume_registro'                             => 'nullable|max:10',
                 'fecha_verificacion'                        => 'nullable|date',
