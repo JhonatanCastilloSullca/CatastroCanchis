@@ -897,7 +897,7 @@
                                         <div class="divcuadro">9</div> N° MUNICIPAL
                                     </label>
                                     <input type="text" class="form-control" placeholder="" name="nmunicipalotros"
-                                        maxlength="6" wire:model="nmunicipalotros" tabindex="54">
+                                        maxlength="16" wire:model="nmunicipalotros" tabindex="54">
                                     @error('nmunicipalotros')
                                         <span class="error-message" style="color:red">{{ $message }}</span>
                                     @enderror
@@ -909,7 +909,7 @@
                                         <div class="divcuadro">13</div> N. INTERIOR
                                     </label>
                                     <input type="text" class="form-control" placeholder="" name="ninteriorotros"
-                                        maxlength="4" wire:model="ninteriorotros" tabindex="55">
+                                        maxlength="14" wire:model="ninteriorotros" tabindex="55">
                                     @error('ninteriorotros')
                                         <span class="error-message" style="color:red">{{ $message }}</span>
                                     @enderror
@@ -960,7 +960,7 @@
                                         <div class="divcuadro">17</div> MANZANA
                                     </label>
                                     <input type="text" class="form-control" placeholder="" name="manzanaotros"
-                                        maxlength="3" wire:model="manzanaotros" tabindex="59">
+                                        maxlength="13" wire:model="manzanaotros" tabindex="59">
                                     @error('manzanaotros')
                                         <span class="error-message" style="color:red">{{ $message }}</span>
                                     @enderror
@@ -972,7 +972,7 @@
                                         <div class="divcuadro">18</div> LOTE
                                     </label>
                                     <input type="text" class="form-control" placeholder="" name="loteotros"
-                                        wire:model="loteotros" maxlength="5" tabindex="60">
+                                        wire:model="loteotros" maxlength="15" tabindex="60">
                                     @error('loteotros')
                                         <span class="error-message" style="color:red">{{ $message }}</span>
                                     @enderror
@@ -984,7 +984,7 @@
                                         <div class="divcuadro">19</div> SUB-LOTE
                                     </label>
                                     <input type="text" class="form-control" placeholder="" name="subloteotros"
-                                        wire:model="subloteotros" maxlength="6" tabindex="61">
+                                        wire:model="subloteotros" maxlength="16" tabindex="61">
                                     @error('subloteotros')
                                         <span class="error-message" style="color:red">{{ $message }}</span>
                                     @enderror
@@ -2514,7 +2514,7 @@
                                 @enderror
                                 <label class="form-label d-inline-flex"> FECHA</label>
                                 <input type="date" class="form-control" name="fecha_supervision"
-                                    wire:model="fecha_supervision" tabindex="156" max="{{ date('Y-m-d') }}">
+                                    wire:model="fecha_supervision" tabindex="156" >
                                 @error('fecha_supervision')
                                     <span class="error-message" style="color:red">{{ $message }}</span>
                                 @enderror

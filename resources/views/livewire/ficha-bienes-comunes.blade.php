@@ -384,7 +384,7 @@
                                 <div class="mb-3">
                                     <div wire:ignore>
                                         <label class="form-label d-inline-flex">
-                                            <div class="divcuadrorequired">14</div> CÓDIGO URBANO
+                                            <div class="divcuadro">14</div> CÓDIGO URBANO
                                         </label>
                                         <select class="form-select insumo_id" id="hab_urbana_id" name="hab_urbana_id"
                                             data-width="100%" wire:model="tipoHabi" tabindex="21">
@@ -1879,7 +1879,7 @@
                                 @enderror
                                 <label class="form-label d-inline-flex"> FECHA</label>
                                 <input type="date" class="form-control" name="fecha_supervision"
-                                    wire:model="fecha_supervision" tabindex="148" max="{{ date('Y-m-d') }}">
+                                    wire:model="fecha_supervision" tabindex="148" >
                                 @error('fecha_supervision')
                                     <span class="error-message" style="color:red">{{ $message }}</span>
                                 @enderror

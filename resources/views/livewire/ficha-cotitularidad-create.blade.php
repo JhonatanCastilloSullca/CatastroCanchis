@@ -734,7 +734,7 @@
                         @enderror
                         <label class="form-label d-inline-flex"> FECHA</label>
                         <input type="date" class="form-control" name="fecha_supervision"
-                            wire:model="fecha_supervision" max="{{ date('Y-m-d') }}">
+                            wire:model="fecha_supervision" >
                         @error('fecha_supervision')
                             <span class="error-message" style="color:red">{{ $message }}</span>
                         @enderror

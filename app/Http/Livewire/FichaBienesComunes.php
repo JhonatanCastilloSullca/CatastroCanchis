@@ -643,7 +643,7 @@ class FichaBienesComunes extends Component
                 'piso'                          => 'required|max:2',
                 'unidad'                        => 'required|max:3',
 
-                'tipoHabi'                      => 'required',
+                'tipoHabi'                      => 'nullable',
                 'zona_dist'                     => 'nullable|max:30',
                 'mzna_dist'                     => 'nullable|max:15',
                 'lote_dist'                     => 'nullable|max:5',
@@ -1019,7 +1019,9 @@ class FichaBienesComunes extends Component
 
                 $contpuertas++;
                 $puerta->fichas()->attach(str_pad($ficha->id_ficha,19,'0',STR_PAD_LEFT));
-                $puerta->via->hab_urbanas()->attach($this->tipoHabi);
+                if($this->tipoHabi){
+                    $puerta->via->hab_urbanas()->attach($this->tipoHabi);
+                }
 
             }
 

@@ -247,11 +247,11 @@ class FichaBienComunEdit extends Component
         $this->codi_cont_rentas= $fichaanterior->unicat->codi_cont_rentas;
         $this->codi_pred_rentas= $fichaanterior->unicat->codi_pred_rentas;
 
-        $this->tipoHabi=str_pad($fichaanterior->lote->id_hab_urba,10,'0',STR_PAD_LEFT);
-        $idhaburb = $fichaanterior->lote->id_hab_urba;
+        $this->tipoHabi=$fichaanterior?->lote?->id_hab_urba ? $fichaanterior?->lote?->id_hab_urba : null;
+        $idhaburb = $fichaanterior?->lote?->id_hab_urba;
         $nomb_hab_urba1 = HabUrbana::where('id_hab_urba', '=', $idhaburb)?->first();
         $nomb_hab_urba2 = $nomb_hab_urba1?->nomb_hab_urba;        
-        $this->nomb_hab_urba = $nomb_hab_urba1->tipo_hab_urba.''.$nomb_hab_urba2;
+        $this->nomb_hab_urba = $nomb_hab_urba1 ? $nomb_hab_urba1->tipo_hab_urba.''.$nomb_hab_urba2 : "";
         $this->zona_dist=$fichaanterior->lote->zona_dist;
         $this->mzna_dist=$fichaanterior->lote->mzna_dist;
         $this->lote_dist=$fichaanterior->lote->lote_dist;
@@ -891,7 +891,7 @@ class FichaBienComunEdit extends Component
                 'piso'                          => 'required|max:2',
                 'unidad'                        => 'required|max:3',
 
-                'tipoHabi'                      => 'required',
+                'tipoHabi'                      => 'nullable',
                 'zona_dist'                     => 'nullable|max:30',
                 'mzna_dist'                     => 'nullable|max:15',
                 'lote_dist'                     => 'nullable|max:5',
@@ -1301,7 +1301,9 @@ class FichaBienComunEdit extends Component
                 }
                 $contpuertas++;
                 $puerta->fichas()->attach(str_pad($ficha->id_ficha,19,'0',STR_PAD_LEFT));
-                $puerta->via->hab_urbanas()->attach($this->tipoHabi);
+                if($this->tipoHabi){
+                    $puerta->via->hab_urbanas()->attach($this->tipoHabi);
+                }
             }
 
 
