@@ -487,8 +487,7 @@ class FichaIndividualCreate extends Component
             } else {
                 try {
                     $response = Http::timeout(10)->withHeaders([
-                        'Referer' => 'http://apis.net.pe/api-ruc',
-                        'Authorization' => 'Bearer ' . $token
+                        'Referer' => 'http://apis.net.pe/api-ruc'
                     ])->get($urldni . $dni);
                     $persona = ($response->json());
                     if (isset($persona['error']) || $persona == "") {
@@ -539,8 +538,7 @@ class FichaIndividualCreate extends Component
             } else {
                 try {
                     $response = Http::timeout(10)->withHeaders([
-                        'Referer' => 'http://apis.net.pe/api-ruc',
-                        'Authorization' => 'Bearer ' . $token
+                        'Referer' => 'http://apis.net.pe/api-ruc'
                     ])->get($urldni . $dni);
                     $persona = ($response->json());
                     if (isset($persona['error']) || $persona == "") {
@@ -595,8 +593,7 @@ class FichaIndividualCreate extends Component
                 try {
 
                     $response = Http::timeout(10)->withHeaders([
-                        'Referer' => 'http://apis.net.pe/api-ruc',
-                        'Authorization' => 'Bearer ' . $token
+                        'Referer' => 'http://apis.net.pe/api-ruc'
                     ])->get($urlruc . $ruc);
 
                     $persona = ($response->json());
@@ -894,8 +891,7 @@ class FichaIndividualCreate extends Component
                 } else {
                     try {
                         $response = Http::timeout(10)->withHeaders([
-                            'Referer' => 'http://apis.net.pe/api-ruc',
-                            'Authorization' => 'Bearer ' . $token
+                            'Referer' => 'http://apis.net.pe/api-ruc'
                         ])->get($urldni . $dni);
                         $persona = ($response->json());
                         if (isset($persona['error']) || $persona == "") {
@@ -981,8 +977,7 @@ class FichaIndividualCreate extends Component
             } else {
                 try {
                     $response = Http::timeout(10)->withHeaders([
-                        'Referer' => 'http://apis.net.pe/api-ruc',
-                        'Authorization' => 'Bearer ' . $token
+                        'Referer' => 'http://apis.net.pe/api-ruc'
                     ])->get($urldni . $dni);
 
                     $persona = ($response->json());

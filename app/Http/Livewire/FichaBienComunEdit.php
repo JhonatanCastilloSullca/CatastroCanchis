@@ -813,8 +813,7 @@ class FichaBienComunEdit extends Component
             $token= config('services.apisunat.token');
             $urldni=config('services.apisunat.urldni');
             $response=Http::withHeaders([
-                'Referer' => 'http://apis.net.pe/api-ruc',
-                'Authorization' => 'Bearer ' . $token
+                'Referer' => 'http://apis.net.pe/api-ruc'
             ])->get($urldni.$dni);
 
             $persona=($response->json());
