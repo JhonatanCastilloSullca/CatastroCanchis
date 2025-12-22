@@ -1984,7 +1984,6 @@
             @if ($ficha?->titular != '')
                 {{ $ficha?->titular?->cond_titular }}
             @else
-                05
             @endif
         </div>
         <div style="width: 582px;height: 15px;float:left;" class="fondoclarito">
