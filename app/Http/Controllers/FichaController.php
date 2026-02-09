@@ -1156,109 +1156,225 @@ public function fichaCotitularidad(Ficha $ficha)
 
     public function anexoficha($sector)
     {
+        ini_set('pcre.backtrack_limit', '5000000');
+        ini_set('pcre.recursion_limit',  '500000');
+        ini_set('memory_limit', '1024M');
+
         $mytime = Carbon::now('America/Lima');
         $fileName = 'anexoficha.pdf';
         $mpdf = new \Mpdf\Mpdf([
-            'format' => [210, 297],
-            'margin_left' => 10,
-            'margin_right' => 10,
-            'margin_top' => 10,
-            'margin_bottom' => 10,
-            'margin_header' => 10,
-            'margin_footer' => 10,
-        ]);
+            'mode'                 => 'utf-8',
+            'format'               => 'A4-L', // Landscape
+            'margin_left'          => 10,
+            'margin_right'         => 10,
+            'margin_top'           => 10,
+            'margin_bottom'        => 10,
+            'tempDir'              => storage_path('app/mpdf-temp'),
+        ]); $sectores = Sectore::orderby('codi_sector')->get();
 
-        $sectores = Sectore::where('id_sector', $sector)->orderby('codi_sector')->first();
+        $sectores = Sectore::where('id_sector',$sector)->orderby('codi_sector')->first();
         $sector2 = $sector;
-        $areaPorLote = UniCat::select('tf_uni_cat.id_lote')
-            ->join('tf_fichas as tf', 'tf_uni_cat.id_uni_cat', '=', 'tf.id_uni_cat')
-            ->leftJoin('tf_fichas_bienes_comunes as tb', 'tf.id_ficha', '=', 'tb.id_ficha')
-            ->leftJoin('tf_fichas_individuales as ti', 'tf.id_ficha', '=', 'ti.id_ficha')
-            ->leftJoin('tf_construcciones as tc', 'tf.id_ficha', '=', 'tc.id_ficha')
-            ->selectRaw('
-            SUM(
-                CASE
-                    WHEN tf.tipo_ficha = \'04\' THEN COALESCE(tb.area_verificada, 0)
-                    WHEN tf.tipo_ficha = \'01\' THEN 
-                        CASE 
-                            WHEN COALESCE(tc.area_verificada, 0) > 0 THEN tc.area_verificada
-                            ELSE COALESCE(ti.area_verificada, 0)
-                        END
-                    ELSE 0
-                END
-            ) as totalAreaPorLote
-        ')
-            ->groupBy('tf_uni_cat.id_lote')
-            ->toSql();
+        // Subconsulta de áreas (igual que antes pero sin ->toSql())
+        $areaPorLote = DB::table('tf_uni_cat as u')
+        ->join('tf_fichas as f', 'u.id_uni_cat', '=', 'f.id_uni_cat')
+        ->leftJoin('tf_fichas_bienes_comunes as tb', 'f.id_ficha', '=', 'tb.id_ficha')
+        ->leftJoin('tf_fichas_individuales as ti', 'f.id_ficha', '=', 'ti.id_ficha')
+        ->leftJoin('tf_construcciones as tc', 'f.id_ficha', '=', 'tc.id_ficha')
+        ->whereIn('f.tipo_ficha', ['01','04'])
+        ->groupBy('u.id_lote','u.id_edificacion','u.codi_entrada','u.codi_piso')
+        ->selectRaw("
+            u.id_lote,
+            u.id_edificacion,
+            u.codi_entrada,
+            u.codi_piso,
+            MAX(CASE WHEN f.tipo_ficha = '04' AND tb.area_verificada IS NOT NULL
+                    THEN tb.area_verificada ELSE ti.area_verificada END) AS area_seleccionada,
+            SUM(tc.area_verificada) AS total_construcciones
+        ");
 
-        $areaPorLoteTitulo = UniCat::select('tf_uni_cat.id_lote')
-        ->join('tf_fichas as tf', 'tf_uni_cat.id_uni_cat', '=', 'tf.id_uni_cat')
-        ->leftJoin('tf_fichas_bienes_comunes as tb', 'tf.id_ficha', '=', 'tb.id_ficha')
-        ->leftJoin('tf_fichas_individuales as ti', 'tf.id_ficha', '=', 'ti.id_ficha')
-        ->leftJoin('tf_construcciones as tc', 'tf.id_ficha', '=', 'tc.id_ficha')
-        ->selectRaw('
-            SUM(
-                CASE
-                    WHEN tf.tipo_ficha = \'04\' THEN COALESCE(tb.area_titulo, 0)
-                    WHEN tf.tipo_ficha = \'01\' THEN 
-                        CASE 
-                            WHEN COALESCE(tc.area_declarada, 0) > 0 THEN tc.area_declarada
-                            ELSE COALESCE(ti.area_titulo, 0)
-                        END
-                    ELSE 0
-                END
-            ) as totalAreaPorLoteTitulo
-        ')
-        ->groupBy('tf_uni_cat.id_lote')
-        ->toSql();
+        // Traemos TODO en una sola consulta
+        $titulares = UniCat::query()
+        // sector por whereExists (más barato que whereHas en cascada)
+        ->whereExists(function($q) use ($sector2) {
+            $q->select(DB::raw(1))
+            ->from('tf_lotes as l')
+            ->join('tf_manzanas as m', 'm.id_mzna', '=', 'l.id_mzna')
+            ->join('tf_sectores as s', 's.id_sector', '=', 'm.id_sector')
+            ->whereColumn('l.id_lote', 'tf_uni_cat.id_lote')
+            ->where('s.id_sector', $sector2);
+        })
+        // Adjunta áreas
+        ->joinSub($areaPorLote, 'area_por_lote', function($j) {
+            $j->on('tf_uni_cat.id_lote', '=', 'area_por_lote.id_lote')
+            ->on('tf_uni_cat.id_edificacion', '=', 'area_por_lote.id_edificacion')
+            ->on('tf_uni_cat.codi_entrada', '=', 'area_por_lote.codi_entrada')
+            ->on('tf_uni_cat.codi_piso', '=', 'area_por_lote.codi_piso');
+        })
+        // Lotes para ordenar
+        ->leftJoin('tf_lotes as l', 'tf_uni_cat.id_lote', '=', 'l.id_lote')
+        ->leftJoin('tf_edificaciones as e', 'e.id_edificacion', '=', 'tf_uni_cat.id_edificacion')
+        // ===== Subselects para PUERTA/VÍA =====
+        ->addSelect([
+            'tf_uni_cat.*',
+            'l.id_mzna',
+            'l.codi_lote',
+            'area_por_lote.area_seleccionada',
+            'area_por_lote.total_construcciones',
 
-        $areaPorPiso = UniCat::select('tf_uni_cat.id_lote', 'tf_uni_cat.id_edificacion', 'tf_uni_cat.codi_entrada', 'tf_uni_cat.codi_piso')
-            ->join('tf_fichas as tf', 'tf_uni_cat.id_uni_cat', '=', 'tf.id_uni_cat')
-            ->join('tf_edificaciones as te', 'tf_uni_cat.id_edificacion', '=', 'te.id_edificacion')
-            ->leftJoin('tf_fichas_bienes_comunes as tb', 'tf.id_ficha', '=', 'tb.id_ficha')
-            ->leftJoin('tf_fichas_individuales as ti', 'tf.id_ficha', '=', 'ti.id_ficha')
-            ->leftJoin('tf_construcciones as tc', 'tf.id_ficha', '=', 'tc.id_ficha')
-            ->selectRaw('
-            SUM(
-                CASE
-                    WHEN tf.tipo_ficha = \'04\' THEN COALESCE(tb.area_verificada, 0)
-                    WHEN tf.tipo_ficha = \'01\' THEN 
-                        CASE 
-                            WHEN COALESCE(tc.area_verificada, 0) > 0 THEN tc.area_verificada
-                            ELSE COALESCE(ti.area_verificada, 0)
-                        END
-                    ELSE 0
-                END
-            ) as totalAreaPorPiso
-        ')
-            ->groupBy('tf_uni_cat.id_lote', 'tf_uni_cat.id_edificacion', 'tf_uni_cat.codi_entrada', 'tf_uni_cat.codi_piso')
-            ->toSql();
+            // tipo_via / nomb_via / codi_via (desde tf_puertas + tf_vias) y nume_muni
+            'tipo_via' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->join('tf_vias as v', 'v.id_via', '=', 'p.id_via')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('v.tipo_via'),
 
-        $titulares = UniCat::with([
-            'edificacion',
-            'lote',
-            'lote.manzana',
-            'lote.manzana.sectore',
-            'titularesPersonalizados',
-            'puertaPersonalizada',
-            'areaIndividual'
+            'nomb_via' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->join('tf_vias as v', 'v.id_via', '=', 'p.id_via')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('v.nomb_via'),
+
+            'codi_via' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->join('tf_vias as v', 'v.id_via', '=', 'p.id_via')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('v.codi_via'),
+
+            'nume_muni' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('p.nume_muni'),
+
+            'cuc_ficha' => DB::table('tf_fichas as f')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)
+                ->select('f.cuc'),
+
+            // ===== Subselect USO más reciente (desc_uso) =====
+            'desc_uso' => DB::table('tf_fichas as f')
+                ->join('tf_fichas_individuales as fi', 'fi.id_ficha', '=', 'f.id_ficha')
+                ->join('tf_usos as u', 'u.codi_uso', '=', 'fi.codi_uso')
+                ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+                ->where('f.tipo_ficha','01')
+                ->orderBy('f.fecha_grabado','desc')
+                ->limit(1)->select('u.desc_uso'),
+
+            // ===== Subselects TITULARES agregados (para no hacer 3 bucles en Blade) =====
+            // NOMBRES (respeta persona natural / jurídica)
+            'titulares_nombres' => DB::table('tf_titulares as t')
+            ->join('tf_fichas as f', 'f.id_ficha', '=', 't.id_ficha')
+            ->join('tf_personas as p', 'p.id_persona', '=', 't.id_persona')
+            ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+            // OJO: en PG, si tipo_ficha es texto usa ['01','02']; si es numérico usa [1,2].
+            ->whereIn('f.tipo_ficha', ['01','02'])
+            ->selectRaw("
+                string_agg(
+                    (
+                        CASE
+                            WHEN p.tipo_persona = '1' THEN concat_ws(' ', p.nombres, p.ape_paterno, p.ape_materno)
+                            WHEN p.tipo_persona = '2' THEN p.razon_social
+                            ELSE 'Otro'
+                        END
+                    )::text,
+                    E'\n'
+                    ORDER BY f.fecha_grabado DESC
+                )
+            "),
+
+            // ===== PORCENTAJES =====
+            'titulares_porcentajes' => DB::table('tf_titulares as t')
+            ->join('tf_fichas as f', 'f.id_ficha', '=', 't.id_ficha')
+            ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+            ->whereIn('f.tipo_ficha', ['01','02'])
+            ->selectRaw("
+                string_agg(
+                    t.porc_cotitular::text,
+                    E'\n'
+                    ORDER BY f.fecha_grabado DESC
+                )
+            "),
+
+            // ===== DOCUMENTOS =====
+            'titulares_documentos' => DB::table('tf_titulares as t')
+            ->join('tf_fichas as f', 'f.id_ficha', '=', 't.id_ficha')
+            ->join('tf_personas as p', 'p.id_persona', '=', 't.id_persona')
+            ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+            ->whereIn('f.tipo_ficha', ['01','02'])
+            ->selectRaw("
+                string_agg(
+                    p.nume_doc::text,
+                    E'\n'
+                    ORDER BY f.fecha_grabado DESC
+                )
+            "),
         ])
-            ->whereHas('fichas')
-            ->whereHas('lote.manzana.sectore', function ($query) use ($sector2) {
-                $query->where('id_sector', $sector2);
-            })
-            ->join(DB::raw('(' . $areaPorLote . ') as area_por_lote'), 'tf_uni_cat.id_lote', '=', 'area_por_lote.id_lote')
-            ->join(DB::raw('(' . $areaPorLoteTitulo . ') as area_por_lote_titulo'), 'tf_uni_cat.id_lote', '=', 'area_por_lote_titulo.id_lote')
-            ->join(DB::raw('(' . $areaPorPiso . ') as area_por_piso'), function ($join) {
-                $join->on('tf_uni_cat.id_lote', '=', 'area_por_piso.id_lote')
-                    ->on('tf_uni_cat.codi_entrada', '=', 'area_por_piso.codi_entrada')
-                    ->on('tf_uni_cat.codi_piso', '=', 'area_por_piso.codi_piso')
-                    ->on('tf_uni_cat.id_edificacion', '=', 'area_por_piso.id_edificacion');
-            })
-            ->select('tf_uni_cat.*', 'area_por_lote.totalareaporlote', 'area_por_piso.totalareaporpiso','area_por_lote_titulo.totalareaporlotetitulo')
-            ->distinct()
-            ->orderBy('tf_uni_cat.cuc', 'asc')
-            ->get();
+        ->orderBy('l.id_mzna')
+        ->orderBy('l.codi_lote')
+
+        /* 1) Que la edificación '99' vaya PRIMERO; el resto después */
+        ->orderByRaw("
+        CASE
+            WHEN COALESCE(NULLIF(e.codi_edificacion,''),'99') = '99' THEN 0
+            ELSE 1
+        END ASC
+        ")
+
+        /* 2) Para las edificaciones que NO son '99', orden ascendente numérico por edificación */
+        ->orderByRaw("
+        CASE
+            WHEN COALESCE(NULLIF(e.codi_edificacion,''),'99') <> '99'
+            THEN NULLIF(e.codi_edificacion,'')::int
+        END ASC NULLS LAST
+        ")
+
+        /* 3) Dentro de cada edificación, priorizar la BC (99/99/999) primero */
+        ->orderByRaw("
+        CASE
+            WHEN tf_uni_cat.codi_entrada = '99'
+            AND tf_uni_cat.codi_piso    = '99'
+            AND tf_uni_cat.codi_unidad  = '999'
+            THEN 0 ELSE 1
+        END ASC
+        ")
+
+        /* 4) Para el resto (no BC), ordenar por entrada → piso → unidad numéricamente */
+        ->orderByRaw("
+        CASE
+            WHEN NOT (tf_uni_cat.codi_entrada='99' AND tf_uni_cat.codi_piso='99' AND tf_uni_cat.codi_unidad='999')
+            THEN NULLIF(BTRIM(tf_uni_cat.codi_entrada),'')::int
+        END ASC NULLS LAST
+        ")
+        ->orderByRaw("
+        CASE
+            WHEN NOT (tf_uni_cat.codi_entrada='99' AND tf_uni_cat.codi_piso='99' AND tf_uni_cat.codi_unidad='999')
+            THEN NULLIF(BTRIM(tf_uni_cat.codi_piso),'')::int
+        END ASC NULLS LAST
+        ")
+        ->orderByRaw("
+        CASE
+            WHEN NOT (tf_uni_cat.codi_entrada='99' AND tf_uni_cat.codi_piso='99' AND tf_uni_cat.codi_unidad='999')
+            THEN NULLIF(BTRIM(tf_uni_cat.codi_unidad),'')::int
+        END ASC NULLS LAST
+        ")
+
+        ->get();
 
         $numero = count($titulares);
         $total = 0;
@@ -1266,8 +1382,10 @@ public function fichaCotitularidad(Ficha $ficha)
         $logos = Institucion::first();
         $fecha = date("d/m/Y", strtotime($mytime));
         $hora = date("H:m:s", strtotime($mytime));
-        $html = \View::make('pages.pdf.anexoficha', compact('titulares', 'sectores', 'sector2', 'numero', 'logos', 'fecha', 'hora'));
+        $html = \View::make('pages.pdf.anexoficha', compact('titulares','sectores','sector2', 'numero', 'logos', 'fecha', 'hora'));
         $html = $html->render();
+        $mpdf->SetDisplayMode('fullwidth');
+        $mpdf->SetAutoPageBreak(true, 10);
         $mpdf->WriteHTML($html);
         $mpdf->Output($fileName, 'I');
     }
@@ -1275,99 +1393,210 @@ public function fichaCotitularidad(Ficha $ficha)
     public function anexofichaExcel($sector)
     {
         $mytime = Carbon::now('America/Lima');
-        $sectores = Sectore::orderby('codi_sector')->get();
-
-        $sectores = Sectore::where('id_sector', $sector)->orderby('codi_sector')->first();
+        $sectores = Sectore::where('id_sector',$sector)->orderby('codi_sector')->first();
         $sector2 = $sector;
-        $areaPorLote = UniCat::select('tf_uni_cat.id_lote')
-            ->join('tf_fichas as tf', 'tf_uni_cat.id_uni_cat', '=', 'tf.id_uni_cat')
-            ->leftJoin('tf_fichas_bienes_comunes as tb', 'tf.id_ficha', '=', 'tb.id_ficha')
-            ->leftJoin('tf_fichas_individuales as ti', 'tf.id_ficha', '=', 'ti.id_ficha')
-            ->leftJoin('tf_construcciones as tc', 'tf.id_ficha', '=', 'tc.id_ficha')
-            ->selectRaw('
-            SUM(
-                CASE
-                    WHEN tf.tipo_ficha = \'04\' THEN COALESCE(tb.area_verificada, 0)
-                    WHEN tf.tipo_ficha = \'01\' THEN 
-                        CASE 
-                            WHEN COALESCE(tc.area_verificada, 0) > 0 THEN tc.area_verificada
-                            ELSE COALESCE(ti.area_verificada, 0)
-                        END
-                    ELSE 0
-                END
-            ) as totalAreaPorLote
-        ')
-            ->groupBy('tf_uni_cat.id_lote')
-            ->toSql();
 
-        $areaPorPiso = UniCat::select('tf_uni_cat.id_lote', 'tf_uni_cat.id_edificacion', 'tf_uni_cat.codi_entrada', 'tf_uni_cat.codi_piso')
-            ->join('tf_fichas as tf', 'tf_uni_cat.id_uni_cat', '=', 'tf.id_uni_cat')
-            ->join('tf_edificaciones as te', 'tf_uni_cat.id_edificacion', '=', 'te.id_edificacion')
-            ->leftJoin('tf_fichas_bienes_comunes as tb', 'tf.id_ficha', '=', 'tb.id_ficha')
-            ->leftJoin('tf_fichas_individuales as ti', 'tf.id_ficha', '=', 'ti.id_ficha')
-            ->leftJoin('tf_construcciones as tc', 'tf.id_ficha', '=', 'tc.id_ficha')
-            ->selectRaw('
-            SUM(
-                CASE
-                    WHEN tf.tipo_ficha = \'04\' THEN COALESCE(tb.area_verificada, 0)
-                    WHEN tf.tipo_ficha = \'01\' THEN 
-                        CASE 
-                            WHEN COALESCE(tc.area_verificada, 0) > 0 THEN tc.area_verificada
-                            ELSE COALESCE(ti.area_verificada, 0)
-                        END
-                    ELSE 0
-                END
-            ) as totalAreaPorPiso
-        ')
-            ->groupBy('tf_uni_cat.id_lote', 'tf_uni_cat.id_edificacion', 'tf_uni_cat.codi_entrada', 'tf_uni_cat.codi_piso')
-            ->toSql();
+       // Subconsulta de áreas (igual que antes pero sin ->toSql())
+        $areaPorLote = DB::table('tf_uni_cat as u')
+        ->join('tf_fichas as f', 'u.id_uni_cat', '=', 'f.id_uni_cat')
+        ->leftJoin('tf_fichas_bienes_comunes as tb', 'f.id_ficha', '=', 'tb.id_ficha')
+        ->leftJoin('tf_fichas_individuales as ti', 'f.id_ficha', '=', 'ti.id_ficha')
+        ->leftJoin('tf_construcciones as tc', 'f.id_ficha', '=', 'tc.id_ficha')
+        ->whereIn('f.tipo_ficha', ['01','04'])
+        ->groupBy('u.id_lote','u.id_edificacion','u.codi_entrada','u.codi_piso')
+        ->selectRaw("
+            u.id_lote,
+            u.id_edificacion,
+            u.codi_entrada,
+            u.codi_piso,
+            MAX(CASE WHEN f.tipo_ficha = '04' AND tb.area_verificada IS NOT NULL
+                    THEN tb.area_verificada ELSE ti.area_verificada END) AS area_seleccionada,
+            SUM(tc.area_verificada) AS total_construcciones
+        ");
 
-        $areaPorLoteTitulo = UniCat::select('tf_uni_cat.id_lote')
-        ->join('tf_fichas as tf', 'tf_uni_cat.id_uni_cat', '=', 'tf.id_uni_cat')
-        ->leftJoin('tf_fichas_bienes_comunes as tb', 'tf.id_ficha', '=', 'tb.id_ficha')
-        ->leftJoin('tf_fichas_individuales as ti', 'tf.id_ficha', '=', 'ti.id_ficha')
-        ->leftJoin('tf_construcciones as tc', 'tf.id_ficha', '=', 'tc.id_ficha')
-        ->selectRaw('
-            SUM(
-                CASE
-                    WHEN tf.tipo_ficha = \'04\' THEN COALESCE(tb.area_titulo, 0)
-                    WHEN tf.tipo_ficha = \'01\' THEN 
-                        CASE 
-                            WHEN COALESCE(tc.area_declarada, 0) > 0 THEN tc.area_declarada
-                            ELSE COALESCE(ti.area_titulo, 0)
-                        END
-                    ELSE 0
-                END
-            ) as totalAreaPorLoteTitulo
-        ')
-        ->groupBy('tf_uni_cat.id_lote')
-        ->toSql();
+        // Traemos TODO en una sola consulta
+        $titulares = UniCat::query()
+        // sector por whereExists (más barato que whereHas en cascada)
+        ->whereExists(function($q) use ($sector2) {
+            $q->select(DB::raw(1))
+            ->from('tf_lotes as l')
+            ->join('tf_manzanas as m', 'm.id_mzna', '=', 'l.id_mzna')
+            ->join('tf_sectores as s', 's.id_sector', '=', 'm.id_sector')
+            ->whereColumn('l.id_lote', 'tf_uni_cat.id_lote')
+            ->where('s.id_sector', $sector2);
+        })
+        // Adjunta áreas
+        ->joinSub($areaPorLote, 'area_por_lote', function($j) {
+            $j->on('tf_uni_cat.id_lote', '=', 'area_por_lote.id_lote')
+            ->on('tf_uni_cat.id_edificacion', '=', 'area_por_lote.id_edificacion')
+            ->on('tf_uni_cat.codi_entrada', '=', 'area_por_lote.codi_entrada')
+            ->on('tf_uni_cat.codi_piso', '=', 'area_por_lote.codi_piso');
+        })
+        // Lotes para ordenar
+        ->leftJoin('tf_lotes as l', 'tf_uni_cat.id_lote', '=', 'l.id_lote')
+        ->leftJoin('tf_edificaciones as e', 'e.id_edificacion', '=', 'tf_uni_cat.id_edificacion')
+        // ===== Subselects para PUERTA/VÍA =====
+        ->addSelect([
+            'tf_uni_cat.*',
+            'l.id_mzna',
+            'l.codi_lote',
+            'area_por_lote.area_seleccionada',
+            'area_por_lote.total_construcciones',
 
-        $titulares = UniCat::with([
-            'edificacion',
-            'lote',
-            'lote.manzana',
-            'lote.manzana.sectore',
-            'titularesPersonalizados',
-            'puertaPersonalizada',
-            'areaIndividual'
+            // tipo_via / nomb_via / codi_via (desde tf_puertas + tf_vias) y nume_muni
+            'tipo_via' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->join('tf_vias as v', 'v.id_via', '=', 'p.id_via')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('v.tipo_via'),
+
+            'nomb_via' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->join('tf_vias as v', 'v.id_via', '=', 'p.id_via')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('v.nomb_via'),
+
+            'codi_via' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->join('tf_vias as v', 'v.id_via', '=', 'p.id_via')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('v.codi_via'),
+
+            'nume_muni' => DB::table('tf_puertas as p')
+                ->join('tf_ingresos as i', 'i.id_puerta', '=', 'p.id_puerta')
+                ->join('tf_fichas as f', 'f.id_ficha', '=', 'i.id_ficha')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->where('p.tipo_puerta', 'P')
+                ->where('f.tipo_ficha', '01')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)->select('p.nume_muni'),
+
+            // ===== Subselect USO más reciente (desc_uso) =====
+            'desc_uso' => DB::table('tf_fichas as f')
+                ->join('tf_fichas_individuales as fi', 'fi.id_ficha', '=', 'f.id_ficha')
+                ->join('tf_usos as u', 'u.codi_uso', '=', 'fi.codi_uso')
+                ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+                ->where('f.tipo_ficha','01')
+                ->orderBy('f.fecha_grabado','desc')
+                ->limit(1)->select('u.desc_uso'),
+
+            'cuc_ficha' => DB::table('tf_fichas as f')
+                ->whereColumn('f.id_uni_cat', 'tf_uni_cat.id_uni_cat')
+                ->orderBy('f.fecha_grabado', 'desc')
+                ->limit(1)
+                ->select('f.cuc'),
+
+            // ===== Subselects TITULARES agregados (para no hacer 3 bucles en Blade) =====
+            // NOMBRES (respeta persona natural / jurídica)
+            'titulares_nombres' => DB::table('tf_titulares as t')
+            ->join('tf_fichas as f', 'f.id_ficha', '=', 't.id_ficha')
+            ->join('tf_personas as p', 'p.id_persona', '=', 't.id_persona')
+            ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+            // OJO: en PG, si tipo_ficha es texto usa ['01','02']; si es numérico usa [1,2].
+            ->whereIn('f.tipo_ficha', ['01','02'])
+            ->selectRaw("
+                string_agg(
+                    (
+                        CASE
+                            WHEN p.tipo_persona = '1' THEN concat_ws(' ', p.nombres, p.ape_paterno, p.ape_materno)
+                            WHEN p.tipo_persona = '2' THEN p.razon_social
+                            ELSE 'Otro'
+                        END
+                    )::text,
+                    E'\n'
+                    ORDER BY f.fecha_grabado DESC
+                )
+            "),
+
+            // ===== PORCENTAJES =====
+            'titulares_porcentajes' => DB::table('tf_titulares as t')
+            ->join('tf_fichas as f', 'f.id_ficha', '=', 't.id_ficha')
+            ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+            ->whereIn('f.tipo_ficha', ['01','02'])
+            ->selectRaw("
+                string_agg(
+                    t.porc_cotitular::text,
+                    E'\n'
+                    ORDER BY f.fecha_grabado DESC
+                )
+            "),
+
+            // ===== DOCUMENTOS =====
+            'titulares_documentos' => DB::table('tf_titulares as t')
+            ->join('tf_fichas as f', 'f.id_ficha', '=', 't.id_ficha')
+            ->join('tf_personas as p', 'p.id_persona', '=', 't.id_persona')
+            ->whereColumn('f.id_uni_cat','tf_uni_cat.id_uni_cat')
+            ->whereIn('f.tipo_ficha', ['01','02'])
+            ->selectRaw("
+                string_agg(
+                    p.nume_doc::text,
+                    E'\n'
+                    ORDER BY f.fecha_grabado DESC
+                )
+            "),
         ])
-            ->whereHas('fichas')
-            ->whereHas('lote.manzana.sectore', function ($query) use ($sector2) {
-                $query->where('id_sector', $sector2);
-            })
-            ->join(DB::raw('(' . $areaPorLoteTitulo . ') as area_por_lote_titulo'), 'tf_uni_cat.id_lote', '=', 'area_por_lote_titulo.id_lote')
-            ->join(DB::raw('(' . $areaPorLote . ') as area_por_lote'), 'tf_uni_cat.id_lote', '=', 'area_por_lote.id_lote')
-            ->join(DB::raw('(' . $areaPorPiso . ') as area_por_piso'), function ($join) {
-                $join->on('tf_uni_cat.id_lote', '=', 'area_por_piso.id_lote')
-                    ->on('tf_uni_cat.codi_entrada', '=', 'area_por_piso.codi_entrada')
-                    ->on('tf_uni_cat.codi_piso', '=', 'area_por_piso.codi_piso')
-                    ->on('tf_uni_cat.id_edificacion', '=', 'area_por_piso.id_edificacion');
-            })
-            ->select('tf_uni_cat.*', 'area_por_lote.totalareaporlote', 'area_por_piso.totalareaporpiso','area_por_lote_titulo.totalareaporlotetitulo')
-            ->distinct()
-            ->orderBy('tf_uni_cat.cuc', 'asc')
-            ->get();
+        ->orderBy('l.id_mzna')
+        ->orderBy('l.codi_lote')
+
+        /* 1) Que la edificación '99' vaya PRIMERO; el resto después */
+        ->orderByRaw("
+        CASE
+            WHEN COALESCE(NULLIF(e.codi_edificacion,''),'99') = '99' THEN 0
+            ELSE 1
+        END ASC
+        ")
+
+        /* 2) Para las edificaciones que NO son '99', orden ascendente numérico por edificación */
+        ->orderByRaw("
+        CASE
+            WHEN COALESCE(NULLIF(e.codi_edificacion,''),'99') <> '99'
+            THEN NULLIF(e.codi_edificacion,'')::int
+        END ASC NULLS LAST
+        ")
+
+        /* 3) Dentro de cada edificación, priorizar la BC (99/99/999) primero */
+        ->orderByRaw("
+        CASE
+            WHEN tf_uni_cat.codi_entrada = '99'
+            AND tf_uni_cat.codi_piso    = '99'
+            AND tf_uni_cat.codi_unidad  = '999'
+            THEN 0 ELSE 1
+        END ASC
+        ")
+
+        /* 4) Para el resto (no BC), ordenar por entrada → piso → unidad numéricamente */
+        ->orderByRaw("
+        CASE
+            WHEN NOT (tf_uni_cat.codi_entrada='99' AND tf_uni_cat.codi_piso='99' AND tf_uni_cat.codi_unidad='999')
+            THEN NULLIF(BTRIM(tf_uni_cat.codi_entrada),'')::int
+        END ASC NULLS LAST
+        ")
+        ->orderByRaw("
+        CASE
+            WHEN NOT (tf_uni_cat.codi_entrada='99' AND tf_uni_cat.codi_piso='99' AND tf_uni_cat.codi_unidad='999')
+            THEN NULLIF(BTRIM(tf_uni_cat.codi_piso),'')::int
+        END ASC NULLS LAST
+        ")
+        ->orderByRaw("
+        CASE
+            WHEN NOT (tf_uni_cat.codi_entrada='99' AND tf_uni_cat.codi_piso='99' AND tf_uni_cat.codi_unidad='999')
+            THEN NULLIF(BTRIM(tf_uni_cat.codi_unidad),'')::int
+        END ASC NULLS LAST
+        ")
+
+        ->get();
 
         $numero = count($titulares);
         $total = 0;
@@ -1375,7 +1604,7 @@ public function fichaCotitularidad(Ficha $ficha)
         $logos = Institucion::first();
         $fecha = date("d/m/Y", strtotime($mytime));
         $hora = date("H:m:s", strtotime($mytime));
-        return Excel::download(new LotesPropietariosExports($titulares, $sectores, $sector2, $numero, $logos, $fecha, $hora), 'anexoficha.xlsx');
+        return Excel::download(new LotesPropietariosExports($titulares,$sectores, $sector2,$numero,$logos,$fecha,$hora), 'anexoficha.xlsx');
     }
 
     public function updateCod(FichaCodigoRequest $request)
