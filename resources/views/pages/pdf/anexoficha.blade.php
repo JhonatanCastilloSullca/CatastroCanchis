@@ -394,12 +394,12 @@
                 </td>
                 <td style="width: 25%;">
                     <div style="text-align:left;" class="texto fz10 lh10">
-                            <b>PROVINCIA:</b> CUSCO
+                            <b>PROVINCIA:</b> CANCHIS
                     </div>
                 </td>
                 <td style="width: 25%;">
                     <div style="text-align:left;" class="texto fz10 lh10">
-                            <b>DISTRITO:</b> SAN SEBASTIAN
+                            <b>DISTRITO:</b> SICUANI
                     </div>
                 </td>
                 <td style="width: 25%;">
