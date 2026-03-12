@@ -23,16 +23,20 @@ class ViasImport implements OnEachRow, WithHeadingRow, WithBatchInserts, WithChu
     {
         $codevia = Via::where('codi_via',$row['codi_via'])->first();
         if(!$codevia){
-            $via = new Via();
-            $via->id_via = $this->ubigeo.$row['codi_via'];
+            $via = Via::where('id_via',$this->ubigeo.$row['codi_via'])->first();
+            if(!$via){
+                $via = new Via();
+                $via->id_via = $this->ubigeo.$row['codi_via'];
+                $via->id_ubi_geo = $this->ubigeo;
+                $via->fecha_via = Carbon::now()->format("Y-m-d");
+                $via->estado = 1;
+            }            
             $via->nomb_via = $row['nomb_via'];
             $via->tipo_via = $row['tipo_via'];
-            $via->codi_via = $row['codi_via'];
-            $via->id_ubi_geo = $this->ubigeo;
-            $via->fecha_via = Carbon::now()->format("Y-m-d");
-            $via->estado = 1;
+            $via->codi_via = $row['codi_via'];            
             $via->save();
         }
+        
     }
 
     public function batchSize(): int
