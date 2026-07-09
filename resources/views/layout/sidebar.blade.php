@@ -250,6 +250,16 @@
                                         class="nav-link {{ active_class(['impresion/verfichabc']) }}">Ficha Bien Comun</a>
 
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{{ url('/impresion/verfichabcultural') }}"
+                                        class="nav-link {{ active_class(['impresion/verfichabcultural']) }}">Ficha Bien Cultural</a>
+
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ url('/impresion/verficharural') }}"
+                                        class="nav-link {{ active_class(['impresion/verficharural']) }}">Ficha Rural</a>
+
+                                </li>
                             @endcan
                             @can('impresion.verfichainformativa')
                                 <li class="nav-item">

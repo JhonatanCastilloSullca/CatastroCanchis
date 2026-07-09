@@ -381,6 +381,69 @@ class ReporteController extends Controller
         $total = 0;
         return view('pages.reporte.verfichabc', compact('sectores', 'ficha2', 'manzanas', 'ficha', 'sector2', 'manzana2'));
     }
+
+    public function verfichabcultural(Request $request)
+    {
+        $sectores = Sectore::orderby('codi_sector')->get();
+        $manzanas = Manzana::orderby('codi_mzna')->get();
+        $sector2 = $request->buscarSector;
+        $manzana2 = $request->buscarManzana;
+        if ($request->buscarFicha != "") {
+            $ficha2 = str_pad($request->buscarFicha, 7, '0', STR_PAD_LEFT);
+        } else {
+            $ficha2 = $request->buscarFicha;
+        }
+        $ficha = Ficha::where('activo', 'LIKE', '%%');
+        if ($request->buscarSector != '0') {
+            $ficha = $ficha->whereHas('lote.manzana', function ($query) use ($sector2) {
+                $query->where('id_sector', '=', $sector2);
+            });
+        }
+        if ($request->buscarManzana != 0) {
+            $ficha = $ficha->whereHas('lote', function ($query) use ($manzana2) {
+                $query->where('id_mzna', '=', $manzana2);
+            });
+        }
+        if ($request->buscarFicha != "") {
+            $ficha = $ficha->where('nume_ficha', '=', $ficha2);
+        }
+        $ficha = $ficha->where('tipo_ficha', '=', '05');
+        $ficha = $ficha->orderby('nume_ficha')->get();
+        $total = 0;
+        return view('pages.reporte.verfichabcultural', compact('sectores', 'ficha2', 'manzanas', 'ficha', 'sector2', 'manzana2'));
+    }
+
+    public function verficharural(Request $request)
+    {
+        $sectores = Sectore::orderby('codi_sector')->get();
+        $manzanas = Manzana::orderby('codi_mzna')->get();
+        $sector2 = $request->buscarSector;
+        $manzana2 = $request->buscarManzana;
+        if ($request->buscarFicha != "") {
+            $ficha2 = str_pad($request->buscarFicha, 7, '0', STR_PAD_LEFT);
+        } else {
+            $ficha2 = $request->buscarFicha;
+        }
+        $ficha = Ficha::where('activo', 'LIKE', '%%');
+        if ($request->buscarSector != '0') {
+            $ficha = $ficha->whereHas('lote.manzana', function ($query) use ($sector2) {
+                $query->where('id_sector', '=', $sector2);
+            });
+        }
+        if ($request->buscarManzana != 0) {
+            $ficha = $ficha->whereHas('lote', function ($query) use ($manzana2) {
+                $query->where('id_mzna', '=', $manzana2);
+            });
+        }
+        if ($request->buscarFicha != "") {
+            $ficha = $ficha->where('nume_ficha', '=', $ficha2);
+        }
+        $ficha = $ficha->where('tipo_ficha', '=', '06');
+        $ficha = $ficha->orderby('nume_ficha')->get();
+        $total = 0;
+        return view('pages.reporte.verficharural', compact('sectores', 'ficha2', 'manzanas', 'ficha', 'sector2', 'manzana2'));
+    }
+    
     public function verfichainformativa(Request $request)
     {
         $sectores = Sectore::orderby('codi_sector')->get();

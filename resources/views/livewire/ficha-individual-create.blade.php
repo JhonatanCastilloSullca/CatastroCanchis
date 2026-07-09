@@ -520,9 +520,15 @@
                                 </div>
                             </div><!-- Col -->
                         </div><!-- Row -->
-
+                        
                         <div class="row form-group">
                             <h4 class="mb-4"> IDENTIFICACIÓN DEL TITULAR CATASTRAL</h4>
+                            @if ($message = Session::get('warning'))
+                                <span class="error-message" style="color:red">{{ $message }}</span>
+                            @endif
+                            @if ($message = Session::get('success'))
+                                <span class="error-message" style="color:red">{{ $message }}</span>
+                            @endif
                             <div class="col-md-3">
                                 <div class="mb-3">
                                     <div wire:ignore>
@@ -739,9 +745,7 @@
                                     @error('numedoc3')
                                         <span class="error-message" style="color:red">{{ $message }}</span>
                                     @enderror
-                                    @if ($message = Session::get('warning'))
-                                        <span class="error-message" style="color:red">{{ $message }}</span>
-                                    @endif
+                                    
                                 </div>
                             </div><!-- Col -->
                             <div class="col-md-6">
@@ -2452,6 +2456,9 @@
                                 @error('numdocumentodeclarante')
                                     <span class="error-message" style="color:red">{{ $message }}</span>
                                 @enderror
+                                @if ($message = Session::get('warning2'))
+                                    <span class="error-message" style="color:red">{{ $message }}</span>
+                                @endif
                                 @if ($message = Session::get('dark'))
                                     <span class="error-message" style="color:red">{{ $message }}</span>
                                 @endif

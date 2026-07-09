@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class GenerarCertificado extends Model
 {
     use HasFactory;
+
     protected $fillable =[
         'codi_construccion',
         'nume_piso',
@@ -28,6 +29,8 @@ class GenerarCertificado extends Model
         'bloque',
         'certificado_id',
     ];
+
+    public $timestamps = false;
 
     public function ficha()
     {

@@ -150,6 +150,8 @@ Route::group(['middleware'=>['auth']], function () {
     Route::get('/impresion/verfichacotitular', 'App\Http\Controllers\ReporteController@verfichacotitular')->name('impresion/verfichacotitular');
     Route::get('/impresion/verfichaeconomicas', 'App\Http\Controllers\ReporteController@verfichaeconomicas')->name('impresion/verfichaeconomicas');
     Route::get('/impresion/verfichabc', 'App\Http\Controllers\ReporteController@verfichabc')->name('impresion/verfichabc');
+    Route::get('/impresion/verfichabcultural', 'App\Http\Controllers\ReporteController@verfichabcultural')->name('impresion/verfichabcultural');
+    Route::get('/impresion/verficharural', 'App\Http\Controllers\ReporteController@verficharural')->name('impresion/verficharural');
 
 
 

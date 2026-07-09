@@ -517,6 +517,12 @@
 
                         <div class="row form-group">
                             <h4 class="mb-4"> IDENTIFICACIÓN DEL TITULAR CATASTRAL</h4>
+                            @if ($message = Session::get('warning'))
+                                <span class="error-message" style="color:red">{{ $message }}</span>
+                            @endif
+                            @if ($message = Session::get('success'))
+                                <span class="error-message" style="color:red">{{ $message }}</span>
+                            @endif
                             <div class="col-md-3">
                                 <div class="mb-3">
                                     <div wire:ignore>
@@ -2454,10 +2460,12 @@
                                 @error('numdocumentodeclarante')
                                     <span class="error-message" style="color:red">{{ $message }}</span>
                                 @enderror
+                                @if ($message = Session::get('warning2'))
+                                    <span class="error-message" style="color:red">{{ $message }}</span>
+                                @endif
                                 @if ($message = Session::get('dark'))
                                     <span class="error-message" style="color:red">{{ $message }}</span>
                                 @endif
-
 
                                 <label class="form-label d-inline-flex"> NOMBRES</label>
                                 <input type="text" class="form-control" name="nombres_declarante"

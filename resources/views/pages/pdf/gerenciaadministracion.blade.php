@@ -553,8 +553,7 @@
 
 
         <div style="width: 298px;height:200px;float:left;" class="bn">
-            <img src="{{ asset('storage/img/imageneslotes/' . $ficha?->lote?->manzana?->sectore?->codi_sector . '' . $ficha?->lote?->manzana?->codi_mzna . '' . $ficha?->lote?->codi_lote . '.jpg') }}"
-                alt=""
+            <img src="{{ 'storage/img/imageneslotes/' . $ficha?->fichaindividual?->imagen_lote }}" alt="imglotes"
                 style="width: 298px;height:200px;  object-fit: contain;image-orientation: from-image;display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center;">
 
         </div>

@@ -17,7 +17,7 @@ use App\Models\Conductor;
 use App\Models\DomicilioTitular;
 use App\Models\AutorizacionAnuncio;
 use DB;
-
+use Illuminate\Http\Client\RequestException;
 
 class FichaEconomicaCreate extends Component
 {
@@ -941,65 +941,104 @@ class FichaEconomicaCreate extends Component
 
     public function updatednumedoc1()
     {
-        if($this->tipo_doc1=="02")
-        {
-            $dni=$this->numedoc1;
-            if($dni!=""){
-                $token= config('services.apisunat.token');
-                $urldni=config('services.apisunat.urldni');
-                $response=Http::withHeaders([
-                    'Referer' => 'http://apis.net.pe/api-ruc'
-                ])->get($urldni.$dni);
+        if ($this->tipo_doc1 == "02") {
+            $dni = $this->numedoc1;
+            $token = config('services.apisunat.token');
+            $urldni = config('services.apisunat.urldni');
 
-                $persona=($response->json());
+            $host = 'api.apis.net.pe';
+            if (gethostbyname($host) == $host) {
+                session()->flash('warning', 'No hay conexión a Internet. Por favor, verifica tu conexión y vuelve a intentarlo.');
+                // Manejar el error de falta de conexión a Internet aquí
+            } else {
+                try {
+                    $response = Http::timeout(10)->withHeaders([
+                        'Referer' => 'http://apis.net.pe/api-ruc'
+                    ])->get($urldni . $dni);
+                    $persona = ($response->json());
+                    if (isset($persona['error']) || $persona == "") {
+                        $this->nombres1 = "";
+                        $this->ape_paterno1 = "";
+                        $this->ape_materno1 = "";
+                        $this->numedoc1 = $dni;
+                        if (isset($persona['error'])) {
+                            session()->flash('success', 'Se necesita 8 digitos');
+                        }
+                        if ($persona == "") {
+                            session()->flash('success', 'No se encontro datos');
+                        }
+                    } else {
+                        $this->nombres1 = $persona['nombres'];
+                        $this->ape_paterno1 = $persona['apellidoPaterno'];
+                        $this->ape_materno1 = $persona['apellidoMaterno'];
+                        $this->numedoc1 = $dni;
+                    }
+                    // Procesar la respuesta de la API aquí
+                } catch (RequestException $e) {
+                    if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
 
-                if(isset($persona['error']) || $persona==""){
-                    $this->nombres1="";
-                    $this->ape_paterno1="";
-                    $this->ape_materno1="";
-                    $this->numedoc1=$dni;
-                    if(isset($persona['error']))
-                    {
-                        session()->flash('info', 'Se necesita 8 digitos');
+                        session()->flash('warning', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+
+                        // Manejar el error de límite de tiempo de respuesta aquí
+                    } else {
+                        session()->flash('warning', 'Ocurrió un error al consumir la API:');
+
+                        // Manejar otros errores de la API aquí
                     }
-                    if($persona=="")
-                    {
-                        session()->flash('info', 'No se encontro datos');
-                    }
-                }else{
-                    $this->nombres1=$persona['nombres'];
-                    $this->ape_paterno1=$persona['apellidoPaterno'];
-                    $this->ape_materno1=$persona['apellidoMaterno'];
-                    $this->numedoc1=$dni;
                 }
             }
         }
     }
 
-    public function updatednumedoc3($value)
+    public function updatednumedoc3()
     {
-        $ruc=$value;
-        $token= config('services.apisunat.token');
-        $urlruc=config('services.apisunat.urlruc');
-        $response=Http::withHeaders([
-            'Referer' => 'http://apis.net.pe/api-ruc'
-        ])->get($urlruc.$ruc);
 
-        $persona=($response->json());
-        if($persona==""||isset($persona['error'])){
-            $this->razon_social="";
-            $this->numedoc3=$ruc;
-            if($persona['error']=="RUC invalido")
-            {
-                session()->flash('warning'.$nested, 'RUC invalido');
+        if ($this->tipoTitular == 2) {
+            $ruc = $this->numedoc3;
+            $token = config('services.apisunat.token');
+            $urlruc = config('services.apisunat.urlruc');
+
+            $host = 'api.apis.net.pe';
+            if (gethostbyname($host) == $host) {
+
+                session()->flash('warning', 'No hay conexión a Internet. Por favor, verifica tu conexión y vuelve a intentarlo.');
+
+                // Manejar el error de falta de conexión a Internet aquí
+            } else {
+                try {
+
+                    $response = Http::timeout(10)->withHeaders([
+                        'Referer' => 'http://apis.net.pe/api-ruc'
+                    ])->get($urlruc . $ruc);
+
+                    $persona = ($response->json());
+                    if ($persona == "" || isset($persona['error'])) {
+                        $this->razon_social = "";
+                        $this->numedoc3 = $ruc;
+                        if ($persona['error'] == "RUC invalido") {
+                            session()->flash('warning', 'RUC invalido');
+                        }
+                        if ($persona['error'] == "RUC debe contener 11 digitos") {
+                            session()->flash('warning', 'RUC debe contener 11 digitos');
+                        }
+                    } else {
+                        $this->razon_social = $persona['nombre'];
+                        $this->numedoc3 = $ruc;
+                    }
+                    // Procesar la respuesta de la API aquí
+                } catch (RequestException $e) {
+                    if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
+
+                        session()->flash('warning', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+
+                        // Manejar el error de límite de tiempo de respuesta aquí
+                    } else {
+                        session()->flash('warning', 'Ocurrió un error al consumir la API:');
+
+                        // Manejar otros errores de la API aquí
+                    }
+                }
             }
-            if($persona['error']=="RUC debe contener 11 digitos")
-            {
-                session()->flash('warning', 'RUC debe contener 11 digitos');
-            }
-        }else{
-            $this->razon_social=$persona['nombre'];
-            $this->numedoc3=$ruc;
         }
     }
     public function updatedtipoConductor($value)
@@ -1014,34 +1053,55 @@ class FichaEconomicaCreate extends Component
 
     public function updatednumdocumentodeclarante()
     {
-        $dni=$this->numdocumentodeclarante;
-        if($dni!=""){
-            $token= config('services.apisunat.token');
-            $urldni=config('services.apisunat.urldni');
-            $response=Http::withHeaders([
-                'Referer' => 'http://apis.net.pe/api-ruc'
-            ])->get($urldni.$dni);
+        $dni = $this->numdocumentodeclarante;
+        if ($dni != "") {
+            $token = config('services.apisunat.token');
+            $urldni = config('services.apisunat.urldni');
 
-            $persona=($response->json());
+            $host = 'api.apis.net.pe';
+            if (gethostbyname($host) == $host) {
 
-            if(isset($persona['error']) || $persona==""){
-                $this->nombres_declarante="";
-                $this->apellido_paterno_declarante="";
-                $this->apellido_materno_declarante="";
-                $this->numdocumentodeclarante=$dni;
-                if(isset($persona['error']))
-                {
-                    session()->flash('dark', 'Se necesita 8 digitos');
+                session()->flash('warning', 'No hay conexión a Internet. Por favor, verifica tu conexión y vuelve a intentarlo.');
+
+                // Manejar el error de falta de conexión a Internet aquí
+            } else {
+                try {
+                    $response = Http::timeout(10)->withHeaders([
+                        'Referer' => 'http://apis.net.pe/api-ruc'
+                    ])->get($urldni . $dni);
+
+                    $persona = ($response->json());
+
+                    if (isset($persona['error']) || $persona == "") {
+                        $this->nombres_declarante = "";
+                        $this->apellido_paterno_declarante = "";
+                        $this->apellido_materno_declarante = "";
+                        $this->numdocumentodeclarante = $dni;
+                        if (isset($persona['error'])) {
+                            session()->flash('dark', 'Se necesita 8 digitos');
+                        }
+                        if ($persona == "") {
+                            session()->flash('dark', 'No se encontro datos');
+                        }
+                    } else {
+                        $this->nombres_declarante = $persona['nombres'];
+                        $this->apellido_paterno_declarante = $persona['apellidoPaterno'];
+                        $this->apellido_materno_declarante = $persona['apellidoMaterno'];
+                        $this->numdocumentodeclarante = $dni;
+                    }
+                    // Procesar la respuesta de la API aquí
+                } catch (RequestException $e) {
+                    if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
+
+                        session()->flash('warning2', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+
+                        // Manejar el error de límite de tiempo de respuesta aquí
+                    } else {
+                        session()->flash('warning2', 'Ocurrió un error al consumir la API:');
+
+                        // Manejar otros errores de la API aquí
+                    }
                 }
-                if($persona=="")
-                {
-                    session()->flash('dark', 'No se encontro datos');
-                }
-            }else{
-                $this->nombres_declarante=$persona['nombres'];
-                $this->apellido_paterno_declarante=$persona['apellidoPaterno'];
-                $this->apellido_materno_declarante=$persona['apellidoMaterno'];
-                $this->numdocumentodeclarante=$dni;
             }
         }
     }

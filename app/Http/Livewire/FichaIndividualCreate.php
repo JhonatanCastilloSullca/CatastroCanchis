@@ -914,10 +914,10 @@ class FichaIndividualCreate extends Component
                         // Procesar la respuesta de la API aquí
                     } catch (RequestException $e) {
                         if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
-                            session()->flash('warning', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+                            session()->flash('warning2', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
                             // Manejar el error de límite de tiempo de respuesta aquí
                         } else {
-                            session()->flash('warning', 'Ocurrió un error al consumir la API:');
+                            session()->flash('warning2', 'Ocurrió un error al consumir la API:');
                             // Manejar otros errores de la API aquí
                         }
                     }
@@ -1003,11 +1003,11 @@ class FichaIndividualCreate extends Component
                 } catch (RequestException $e) {
                     if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
 
-                        session()->flash('warning', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+                        session()->flash('warning2', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
 
                         // Manejar el error de límite de tiempo de respuesta aquí
                     } else {
-                        session()->flash('warning', 'Ocurrió un error al consumir la API:');
+                        session()->flash('warning2', 'Ocurrió un error al consumir la API:');
 
                         // Manejar otros errores de la API aquí
                     }
