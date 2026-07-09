@@ -36,6 +36,7 @@ use App\Models\Edificaciones;
 use App\Models\TablaCodigo;
 use Carbon\Carbon;
 use DB;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Storage;
 use Livewire\WithFileUploads;
 
@@ -475,53 +476,63 @@ class FichaIndividualCreate extends Component
 
     public function updatednumedoc1()
     {
-        if ($this->tipo_doc1 == "02") {
-            $dni = $this->numedoc1;
-            $token = config('services.apisunat.token');
-            $urldni = config('services.apisunat.urldni');
-
-            $host = 'api.apis.net.pe';
-            if (gethostbyname($host) == $host) {
-                session()->flash('warning', 'No hay conexión a Internet. Por favor, verifica tu conexión y vuelve a intentarlo.');
-                // Manejar el error de falta de conexión a Internet aquí
-            } else {
-                try {
-                    $response = Http::timeout(10)->withHeaders([
-                        'Referer' => 'http://apis.net.pe/api-ruc'
-                    ])->get($urldni . $dni);
-                    $persona = ($response->json());
-                    if (isset($persona['error']) || $persona == "") {
-                        $this->nombres1 = "";
-                        $this->ape_paterno1 = "";
-                        $this->ape_materno1 = "";
-                        $this->numedoc1 = $dni;
-                        if (isset($persona['error'])) {
-                            session()->flash('success', 'Se necesita 8 digitos');
-                        }
-                        if ($persona == "") {
-                            session()->flash('success', 'No se encontro datos');
-                        }
-                    } else {
-                        $this->nombres1 = $persona['nombres'];
-                        $this->ape_paterno1 = $persona['apellidoPaterno'];
-                        $this->ape_materno1 = $persona['apellidoMaterno'];
-                        $this->numedoc1 = $dni;
-                    }
-                    // Procesar la respuesta de la API aquí
-                } catch (RequestException $e) {
-                    if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
-
-                        session()->flash('warning', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
-
-                        // Manejar el error de límite de tiempo de respuesta aquí
-                    } else {
-                        session()->flash('warning', 'Ocurrió un error al consumir la API:');
-
-                        // Manejar otros errores de la API aquí
-                    }
-                }
-            }
+        if ($this->tipo_doc1 != "02") {
+            return;
         }
+
+        $dni = trim($this->numedoc1);
+
+        if (strlen($dni) != 8) {
+            $this->limpiarPersona1($dni);
+            session()->flash('warning', 'El DNI debe tener 8 dígitos.');
+            return;
+        }
+
+        $urldni = config('services.apisunat.urldni');
+
+        try {
+            $response = Http::connectTimeout(3)
+                ->timeout(8)
+                ->withHeaders([
+                    'Referer' => 'http://apis.net.pe/api-ruc'
+                ])
+                ->get($urldni . $dni);
+
+            if (!$response->successful()) {
+                $this->limpiarPersona1($dni);
+                session()->flash('warning', 'No fue posible consultar el DNI en este momento.');
+                return;
+            }
+
+            $persona = $response->json();
+
+            if (empty($persona) || isset($persona['error'])) {
+                $this->limpiarPersona1($dni);
+                session()->flash('warning', 'No se encontraron datos para el DNI ingresado.');
+                return;
+            }
+
+            $this->nombres1 = $persona['nombres'] ?? '';
+            $this->ape_paterno1 = $persona['apellidoPaterno'] ?? '';
+            $this->ape_materno1 = $persona['apellidoMaterno'] ?? '';
+            $this->numedoc1 = $dni;
+
+        } catch (ConnectionException $e) {
+            $this->limpiarPersona1($dni);
+            session()->flash('warning', 'No se pudo conectar con la API. Verifica tu conexión o inténtalo más tarde.');
+
+        } catch (\Throwable $e) {
+            $this->limpiarPersona1($dni);
+            session()->flash('warning', 'Ocurrió un error al consultar el DNI.');
+        }
+    }
+
+    private function limpiarPersona1($dni = '')
+    {
+        $this->nombres1 = "";
+        $this->ape_paterno1 = "";
+        $this->ape_materno1 = "";
+        $this->numedoc1 = $dni;
     }
 
     public function updatednumedoc2()
