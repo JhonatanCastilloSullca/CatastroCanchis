@@ -195,6 +195,11 @@ class ReporteController extends Controller
 
     public function fichaIndividuales($sector, $manzana, $tipo_ficha)
     {
+        ini_set('pcre.backtrack_limit', '50000000');
+        ini_set('pcre.recursion_limit', '10000000');
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $fileName = 'Reporte Masivo de Fichas.pdf';
         $mpdf = new \Mpdf\Mpdf([
             'format' => [210, 297],
