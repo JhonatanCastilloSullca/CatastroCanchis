@@ -233,56 +233,116 @@ class FichaCotitularidadEdit extends Component
     /* INFORMACION FINAL*/
     public function updatednumdocumentodeclarante()
     {
-        $dni = $this->numdocumentodeclarante;
-        if ($dni != "") {
-            $token = config('services.apisunat.token');
-            $urldni = config('services.apisunat.urldni');
+        $dni = trim((string) $this->numdocumentodeclarante);
 
-            $host = 'api.apis.net.pe';
-            if (gethostbyname($host) == $host) {
+        if ($dni === '') {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
 
-                session()->flash('warning', 'No hay conexión a Internet. Por favor, verifica tu conexión y vuelve a intentarlo.');
+            return;
+        }
 
-                // Manejar el error de falta de conexión a Internet aquí
-            } else {
-                try {
-                    $response = Http::timeout(10)->withHeaders([
-                        'Referer' => 'http://apis.net.pe/api-ruc'
-                    ])->get($urldni . $dni);
+        if (!preg_match('/^\d{8}$/', $dni)) {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
 
-                    $persona = ($response->json());
+            session()->flash(
+                'dark',
+                'El DNI debe contener exactamente 8 dígitos.'
+            );
 
-                    if (isset($persona['error']) || $persona == "") {
-                        $this->nombres_declarante = "";
-                        $this->apellido_paterno_declarante = "";
-                        $this->apellido_materno_declarante = "";
-                        $this->numdocumentodeclarante = $dni;
-                        if (isset($persona['error'])) {
-                            session()->flash('dark', 'Se necesita 8 digitos');
-                        }
-                        if ($persona == "") {
-                            session()->flash('dark', 'No se encontro datos');
-                        }
-                    } else {
-                        $this->nombres_declarante = $persona['nombres'];
-                        $this->apellido_paterno_declarante = $persona['apellidoPaterno'];
-                        $this->apellido_materno_declarante = $persona['apellidoMaterno'];
-                        $this->numdocumentodeclarante = $dni;
-                    }
-                    // Procesar la respuesta de la API aquí
-                } catch (RequestException $e) {
-                    if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
+            return;
+        }
 
-                        session()->flash('warning2', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+        $urldni = config('services.apisunat.urldni');
 
-                        // Manejar el error de límite de tiempo de respuesta aquí
-                    } else {
-                        session()->flash('warning2', 'Ocurrió un error al consumir la API:');
+        if (empty($urldni)) {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
 
-                        // Manejar otros errores de la API aquí
-                    }
-                }
+            session()->flash(
+                'warning2',
+                'La URL de consulta de DNI no está configurada.'
+            );
+
+            return;
+        }
+
+        try {
+            $response = Http::connectTimeout(3)
+                ->timeout(8)
+                ->withHeaders([
+                    'Referer' => 'http://apis.net.pe/api-ruc',
+                ])
+                ->get($urldni . $dni);
+
+            if (!$response->successful()) {
+                $this->nombres_declarante = '';
+                $this->apellido_paterno_declarante = '';
+                $this->apellido_materno_declarante = '';
+                $this->numdocumentodeclarante = $dni;
+
+                session()->flash(
+                    'warning2',
+                    'No fue posible consultar el DNI en este momento.'
+                );
+
+                return;
             }
+
+            $persona = $response->json();
+
+            if (
+                !is_array($persona) ||
+                empty($persona) ||
+                isset($persona['error'])
+            ) {
+                $this->nombres_declarante = '';
+                $this->apellido_paterno_declarante = '';
+                $this->apellido_materno_declarante = '';
+                $this->numdocumentodeclarante = $dni;
+
+                session()->flash(
+                    'dark',
+                    $persona['error'] ?? 'No se encontraron datos para el DNI ingresado.'
+                );
+
+                return;
+            }
+
+            $this->nombres_declarante = $persona['nombres'] ?? '';
+            $this->apellido_paterno_declarante = $persona['apellidoPaterno'] ?? '';
+            $this->apellido_materno_declarante = $persona['apellidoMaterno'] ?? '';
+            $this->numdocumentodeclarante = $dni;
+
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
+
+            session()->flash(
+                'warning2',
+                'No se pudo conectar con la API. Verifica tu conexión o inténtalo más tarde.'
+            );
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
+
+            session()->flash(
+                'warning2',
+                'Ocurrió un error al consultar el DNI.'
+            );
         }
     }
     /* INFORMACION FINAL*/
@@ -348,50 +408,101 @@ class FichaCotitularidadEdit extends Component
 
     public function updatednumedoc3($value, $nested)
     {
+        $ruc = trim((string) $value);
 
-        $ruc=$value;
-        $token= config('services.apisunat.token');
-        $urlruc=config('services.apisunat.urlruc');
-        $host = 'api.apis.net.pe';
-        if (gethostbyname($host) == $host) {
+        if ($ruc === '') {
+            $this->razon_social[$nested] = '';
+            $this->numedoc3[$nested] = '';
 
-            session()->flash('warning', 'No hay conexión a Internet. Por favor, verifica tu conexión y vuelve a intentarlo.');
+            return;
+        }
 
-            // Manejar el error de falta de conexión a Internet aquí
-        } else {
-            try {
+        if (!preg_match('/^\d{11}$/', $ruc)) {
+            $this->razon_social[$nested] = '';
+            $this->numedoc3[$nested] = $ruc;
 
-                $response = Http::timeout(10)->withHeaders([
-                    'Referer' => 'http://apis.net.pe/api-ruc'
-                ])->get($urlruc . $ruc);
-                $persona=($response->json());
-                if($persona==""||isset($persona['error'])){
-                    $this->razon_social[$nested]="";
-                    $this->numedoc3[$nested]=$ruc;
-                    if($persona['error']=="RUC invalido")
-                    {
-                        session()->flash('warning.'.$nested, 'RUC invalido');
-                    }
-                    if($persona['error']=="RUC debe contener 11 digitos")
-                    {
-                        session()->flash('warning.'.$nested, 'RUC debe contener 11 digitos');
-                    }
-                }else{
-                    $this->razon_social[$nested]=$persona['nombre'];
-                    $this->numedoc3[$nested]=$ruc;
-                }
-            } catch (RequestException $e) {
-                if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
+            session()->flash(
+                'warning.' . $nested,
+                'El RUC debe contener exactamente 11 dígitos.'
+            );
 
-                    session()->flash('warning', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+            return;
+        }
 
-                    // Manejar el error de límite de tiempo de respuesta aquí
-                } else {
-                    session()->flash('warning', 'Ocurrió un error al consumir la API:');
+        $urlruc = config('services.apisunat.urlruc');
 
-                    // Manejar otros errores de la API aquí
-                }
+        if (empty($urlruc)) {
+            $this->razon_social[$nested] = '';
+            $this->numedoc3[$nested] = $ruc;
+
+            session()->flash(
+                'warning.' . $nested,
+                'La URL de consulta de RUC no está configurada.'
+            );
+
+            return;
+        }
+
+        try {
+            $response = Http::connectTimeout(3)
+                ->timeout(8)
+                ->withHeaders([
+                    'Referer' => 'http://apis.net.pe/api-ruc',
+                ])
+                ->get($urlruc . $ruc);
+
+            if (!$response->successful()) {
+                $this->razon_social[$nested] = '';
+                $this->numedoc3[$nested] = $ruc;
+
+                session()->flash(
+                    'warning.' . $nested,
+                    'No fue posible consultar el RUC en este momento.'
+                );
+
+                return;
             }
+
+            $persona = $response->json();
+
+            if (
+                !is_array($persona) ||
+                empty($persona) ||
+                isset($persona['error'])
+            ) {
+                $this->razon_social[$nested] = '';
+                $this->numedoc3[$nested] = $ruc;
+
+                session()->flash(
+                    'warning.' . $nested,
+                    $persona['error'] ?? 'No se encontraron datos para el RUC ingresado.'
+                );
+
+                return;
+            }
+
+            $this->razon_social[$nested] = $persona['nombre'] ?? '';
+            $this->numedoc3[$nested] = $ruc;
+
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $this->razon_social[$nested] = '';
+            $this->numedoc3[$nested] = $ruc;
+
+            session()->flash(
+                'warning.' . $nested,
+                'No se pudo conectar con la API. Verifica tu conexión o inténtalo más tarde.'
+            );
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            $this->razon_social[$nested] = '';
+            $this->numedoc3[$nested] = $ruc;
+
+            session()->flash(
+                'warning.' . $nested,
+                'Ocurrió un error al consultar el RUC.'
+            );
         }
     }
 

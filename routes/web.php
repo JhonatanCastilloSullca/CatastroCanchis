@@ -183,4 +183,8 @@ Route::group(['middleware'=>['auth']], function () {
     Route::post('editar-ficha-cod-refefencia', 'App\Http\Controllers\FichaController@updateCod')->name('ficha.updateCod');
     Route::post('duplicar-cotitular', 'App\Http\Controllers\FichaController@duplicarCotitular')->name('ficha.duplicarCotitular');
 
+    Route::get('masivo/exportarcuc', 'App\Http\Controllers\ReporteController@exportarcuc')->name('reporte.exportarcuc');
+    Route::post('masivo/guardarcuc', 'App\Http\Controllers\ReporteController@guardarcuc')->name('reporte.guardarcuc');
+    Route::post('masivo/importarcuc', 'App\Http\Controllers\ReporteController@importarcuc')->name('reporte.importarcuc');
+
 });

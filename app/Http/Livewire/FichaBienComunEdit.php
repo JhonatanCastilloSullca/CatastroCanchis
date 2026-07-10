@@ -808,56 +808,116 @@ class FichaBienComunEdit extends Component
     /* INFORMACION FINAL*/
     public function updatednumdocumentodeclarante()
     {
-        $dni = $this->numdocumentodeclarante;
-        if ($dni != "") {
-            $token = config('services.apisunat.token');
-            $urldni = config('services.apisunat.urldni');
+        $dni = trim((string) $this->numdocumentodeclarante);
 
-            $host = 'api.apis.net.pe';
-            if (gethostbyname($host) == $host) {
+        if ($dni === '') {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
 
-                session()->flash('warning', 'No hay conexión a Internet. Por favor, verifica tu conexión y vuelve a intentarlo.');
+            return;
+        }
 
-                // Manejar el error de falta de conexión a Internet aquí
-            } else {
-                try {
-                    $response = Http::timeout(10)->withHeaders([
-                        'Referer' => 'http://apis.net.pe/api-ruc'
-                    ])->get($urldni . $dni);
+        if (!preg_match('/^\d{8}$/', $dni)) {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
 
-                    $persona = ($response->json());
+            session()->flash(
+                'dark',
+                'El DNI debe contener exactamente 8 dígitos.'
+            );
 
-                    if (isset($persona['error']) || $persona == "") {
-                        $this->nombres_declarante = "";
-                        $this->apellido_paterno_declarante = "";
-                        $this->apellido_materno_declarante = "";
-                        $this->numdocumentodeclarante = $dni;
-                        if (isset($persona['error'])) {
-                            session()->flash('dark', 'Se necesita 8 digitos');
-                        }
-                        if ($persona == "") {
-                            session()->flash('dark', 'No se encontro datos');
-                        }
-                    } else {
-                        $this->nombres_declarante = $persona['nombres'];
-                        $this->apellido_paterno_declarante = $persona['apellidoPaterno'];
-                        $this->apellido_materno_declarante = $persona['apellidoMaterno'];
-                        $this->numdocumentodeclarante = $dni;
-                    }
-                    // Procesar la respuesta de la API aquí
-                } catch (RequestException $e) {
-                    if ($e->getCode() === CURLE_OPERATION_TIMEOUTED) {
+            return;
+        }
 
-                        session()->flash('warning2', 'Se ha superado el límite de tiempo de la solicitud. Por favor, inténtalo de nuevo más tarde.');
+        $urldni = config('services.apisunat.urldni');
 
-                        // Manejar el error de límite de tiempo de respuesta aquí
-                    } else {
-                        session()->flash('warning2', 'Ocurrió un error al consumir la API:');
+        if (empty($urldni)) {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
 
-                        // Manejar otros errores de la API aquí
-                    }
-                }
+            session()->flash(
+                'warning2',
+                'La URL de consulta de DNI no está configurada.'
+            );
+
+            return;
+        }
+
+        try {
+            $response = Http::connectTimeout(3)
+                ->timeout(8)
+                ->withHeaders([
+                    'Referer' => 'http://apis.net.pe/api-ruc',
+                ])
+                ->get($urldni . $dni);
+
+            if (!$response->successful()) {
+                $this->nombres_declarante = '';
+                $this->apellido_paterno_declarante = '';
+                $this->apellido_materno_declarante = '';
+                $this->numdocumentodeclarante = $dni;
+
+                session()->flash(
+                    'warning2',
+                    'No fue posible consultar el DNI en este momento.'
+                );
+
+                return;
             }
+
+            $persona = $response->json();
+
+            if (
+                !is_array($persona) ||
+                empty($persona) ||
+                isset($persona['error'])
+            ) {
+                $this->nombres_declarante = '';
+                $this->apellido_paterno_declarante = '';
+                $this->apellido_materno_declarante = '';
+                $this->numdocumentodeclarante = $dni;
+
+                session()->flash(
+                    'dark',
+                    $persona['error'] ?? 'No se encontraron datos para el DNI ingresado.'
+                );
+
+                return;
+            }
+
+            $this->nombres_declarante = $persona['nombres'] ?? '';
+            $this->apellido_paterno_declarante = $persona['apellidoPaterno'] ?? '';
+            $this->apellido_materno_declarante = $persona['apellidoMaterno'] ?? '';
+            $this->numdocumentodeclarante = $dni;
+
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
+
+            session()->flash(
+                'warning2',
+                'No se pudo conectar con la API. Verifica tu conexión o inténtalo más tarde.'
+            );
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            $this->nombres_declarante = '';
+            $this->apellido_paterno_declarante = '';
+            $this->apellido_materno_declarante = '';
+            $this->numdocumentodeclarante = $dni;
+
+            session()->flash(
+                'warning2',
+                'Ocurrió un error al consultar el DNI.'
+            );
         }
     }
     /* INFORMACION FINAL*/

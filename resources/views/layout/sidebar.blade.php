@@ -569,5 +569,11 @@
             </li>
             @endcan
 
+            <li class="nav-item {{ active_class(['masivo/*']) }}">
+                <a href="{{ url('/masivo/exportarcuc') }}" class="nav-link">
+                    <i class="link-icon mdi mdi-timetable"></i>
+                    <span class="link-title">Asignacion CUC</span>
+                </a>
+            </li>
 </div>
 </nav>

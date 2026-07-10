@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CucExport;
+use App\Imports\CucImport;
 use Illuminate\Http\Request;
 use App\Models\Sectore;
 use App\Models\Manzana;
@@ -20,8 +22,7 @@ use App\Models\Institucion;
 use App\Models\FichaIndividual;
 use Carbon\Carbon;
 use DB;
-
-
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReporteController extends Controller
 {
@@ -1442,5 +1443,32 @@ class ReporteController extends Controller
         $numero = count($ficha);
         $total = 0;
         return view('pages.reporte.condiciondeclarante', compact('condicion2', 'tipoficha2', 'ficha', 'numero'));
+    }
+
+    public function exportarcuc()
+    {
+        $sectores=Sectore::all();
+        return view('pages.masivo.exportarcuc',compact('sectores'));
+    }
+
+    public function guardarcuc(Request $request)
+    {
+        $cucs = UniCat::select('tf_uni_cat.id_uni_cat','tf_uni_cat.cuc')->join('tf_lotes as l','l.id_lote','=','tf_uni_cat.id_lote')
+        ->join('tf_manzanas as m','m.id_mzna','=','l.id_mzna')
+        ->where('m.id_sector',$request->sector_id)
+        ->orderBy('l.id_lote','asc')
+        ->get();
+
+        return Excel::download(
+            new CucExport($cucs),
+            'cucasignacion.xlsx'
+        );
+    }
+
+    public function importarcuc(Request $request)
+    {
+        Excel::import(new CucImport(),$request->archivo);
+        return redirect()->route('reporte.exportarcuc')
+            ->with('success', 'Archivo agregado Correctamente.');
     }
 }
