@@ -202,7 +202,7 @@ class ReporteController extends Controller
         ]);
     }
 
-    public function fichaIndividuales(Request $request)
+   public function fichaIndividuales(Request $request)
     {
         $sector = trim(
             (string) $request->input('buscarSector', '')
@@ -216,12 +216,41 @@ class ReporteController extends Controller
             (string) $request->input('buscarTipo', '')
         );
 
+        if (
+            $sector === '' ||
+            $sector === '0' ||
+            $manzana === '' ||
+            $manzana === '0' ||
+            $tipoFicha === '' ||
+            $tipoFicha === '0'
+        ) {
+            return back()->with(
+                'error',
+                'Debe seleccionar sector, manzana y tipo de ficha.'
+            );
+        }
+
+        $inicio = microtime(true);
+
+        $registros = DB::table(
+            'catastro.vw_fichas_individuales_pdf'
+        )
+            ->where('id_sector', $sector)
+            ->where('id_mzna', $manzana)
+            ->where('tipo_ficha', $tipoFicha)
+            ->orderBy('nume_ficha')
+            ->get();
+
         dd([
-            'url_completa' => $request->fullUrl(),
-            'parametros' => $request->all(),
             'sector' => $sector,
             'manzana' => $manzana,
             'tipo_ficha' => $tipoFicha,
+            'cantidad' => $registros->count(),
+            'tiempo_segundos' => round(
+                microtime(true) - $inicio,
+                4
+            ),
+            'fichas' => $registros->pluck('nume_ficha'),
         ]);
     }
 
