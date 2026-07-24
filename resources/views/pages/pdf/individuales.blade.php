@@ -473,7 +473,7 @@
             </div>
         </div>
         <!-- INTERIOR 05 AL 10-->
-        @foreach ($ficha?->puertas as $puerta)
+        @foreach ($ficha?->puertas ?? [] as $puerta)
             <div style="width: 716px;height:16px;margin: auto;">
                 <div style="width: 123px;height: 16px;float:left;" class="texto2 fz8 lh14">
                     {{ $puerta?->via?->codi_via }}
@@ -835,7 +835,7 @@
         <!-- 22 AL 24-->
         @if ($ficha?->titular != '')
             @if ($ficha?->titular?->persona?->tipo_persona == 1)
-                @foreach ($ficha?->titulars as $titular)
+                @foreach ($ficha?->titulars ?? [] as $titular)
                     <div style="width: 716px;height:16px;margin: auto;">
                         <div style="width: 100px;height: 16px;float:left;" class="fondoclaro">
                             <div class="numeros">
@@ -2792,7 +2792,7 @@
 
 
         <!--FOREACH CONSTRUCCIONES -->
-        @foreach ($ficha?->construccions as $construccion)
+        @foreach ($ficha?->construccions ?? [] as $construccion)
             <div style="width: 716px;height:16px;margin: auto;">
                 <div style="width: 34px;height: 16px;float:left;" class="texto2 fz8 lh14">
                     {{ $construccion?->bloque }}
@@ -3130,7 +3130,7 @@
             </div>
         </div>
         <!--FOREACH 71 - 69-->
-        @foreach ($ficha?->instalacions as $instalacion)
+        @foreach ($ficha?->instalacions ?? [] as $instalacion)
             <div style="width: 716px;height:16px;margin: auto;">
                 <div style="width: 64px;height: 16px;float:left;" class="texto2 fz8 lh14">
                     {{ $instalacion?->codiinstalacion?->codi_instalacion }}
@@ -3678,7 +3678,7 @@
             </div>
             <!--foreach-->
             @if ($ficha?->litigantes != '')
-                @foreach ($ficha?->litigantes as $litigante)
+                @foreach ($ficha?->litigantes ?? [] as $litigante)
                     <div style="width: 65px;height: 16px;float:left;" class="texto2 fz8 lh14">
                         {{ $litigante?->persona?->tipo_doc }}
                     </div>
@@ -4011,7 +4011,9 @@
 
 
 
-        <div class="resumen "></div>
+        @if (!$loop->last)
+            <pagebreak />
+        @endif
     @endforeach
 </body>
 
