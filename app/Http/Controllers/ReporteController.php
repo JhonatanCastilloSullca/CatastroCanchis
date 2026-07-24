@@ -203,56 +203,66 @@ class ReporteController extends Controller
     }
 
    public function fichaIndividuales(Request $request)
-    {
-        $sector = trim(
-            (string) $request->input('buscarSector', '')
+{
+    $sector = trim(
+        (string) $request->input('buscarSector', '')
+    );
+
+    $manzana = trim(
+        (string) $request->input('buscarManzana', '')
+    );
+
+    $tipoFicha = trim(
+        (string) $request->input('buscarTipo', '')
+    );
+
+    if (
+        $sector === '' ||
+        $sector === '0' ||
+        $manzana === '' ||
+        $manzana === '0' ||
+        $tipoFicha === '' ||
+        $tipoFicha === '0'
+    ) {
+        abort(
+            422,
+            'Debe seleccionar sector, manzana y tipo de ficha.'
         );
-
-        $manzana = trim(
-            (string) $request->input('buscarManzana', '')
-        );
-
-        $tipoFicha = trim(
-            (string) $request->input('buscarTipo', '')
-        );
-
-        if (
-            $sector === '' ||
-            $sector === '0' ||
-            $manzana === '' ||
-            $manzana === '0' ||
-            $tipoFicha === '' ||
-            $tipoFicha === '0'
-        ) {
-            return back()->with(
-                'error',
-                'Debe seleccionar sector, manzana y tipo de ficha.'
-            );
-        }
-
-        $inicio = microtime(true);
-
-        $registros = DB::table(
-            'catastro.vw_fichas_individuales_pdf'
-        )
-            ->where('id_sector', $sector)
-            ->where('id_mzna', $manzana)
-            ->where('tipo_ficha', $tipoFicha)
-            ->orderBy('nume_ficha')
-            ->get();
-
-        dd([
-            'sector' => $sector,
-            'manzana' => $manzana,
-            'tipo_ficha' => $tipoFicha,
-            'cantidad' => $registros->count(),
-            'tiempo_segundos' => round(
-                microtime(true) - $inicio,
-                4
-            ),
-            'fichas' => $registros->pluck('nume_ficha'),
-        ]);
     }
+
+    $inicio = microtime(true);
+
+    $registros = collect(
+        DB::select(
+            '
+                SELECT *
+                FROM catastro.fn_fichas_individuales_pdf(
+                    ?,
+                    ?,
+                    ?
+                )
+                ORDER BY nume_ficha
+            ',
+            [
+                $sector,
+                $manzana,
+                $tipoFicha,
+            ]
+        )
+    );
+
+    dd([
+        'sector' => $sector,
+        'manzana' => $manzana,
+        'tipo_ficha' => $tipoFicha,
+        'cantidad' => $registros->count(),
+        'tiempo_segundos' => round(
+            microtime(true) - $inicio,
+            4
+        ),
+        'fichas' => $registros->pluck('nume_ficha'),
+    ]);
+}
 
     // public function fichaIndividuales($sector, $manzana, $tipo_ficha)
     // {
