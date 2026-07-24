@@ -314,6 +314,11 @@ class ReporteController extends Controller
                 $registro->litigantes ?? '[]'
             ) ?: [];
 
+            $linderoJson = json_decode(
+                $registro->lindero ?? '{}'
+            );
+
+
             /*
             * TITULARES
             *
@@ -757,6 +762,28 @@ class ReporteController extends Controller
             $registro->litigantes = collect(
                 $litigantesJson
             );
+
+            $registro->lindero = $linderoJson ?: (object) [
+                'fren_campo' => null,
+                'fren_titulo' => null,
+                'fren_colinda_campo' => null,
+                'fren_colinda_titulo' => null,
+
+                'dere_campo' => null,
+                'dere_titulo' => null,
+                'dere_colinda_campo' => null,
+                'dere_colinda_titulo' => null,
+
+                'izqu_campo' => null,
+                'izqu_titulo' => null,
+                'izqu_colinda_campo' => null,
+                'izqu_colinda_titulo' => null,
+
+                'fond_campo' => null,
+                'fond_titulo' => null,
+                'fond_colinda_campo' => null,
+                'fond_colinda_titulo' => null,
+            ];
 
             return $registro;
         });
