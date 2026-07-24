@@ -210,28 +210,50 @@ class ReporteController extends Controller
         ini_set('memory_limit', '1024M');
         ini_set('pcre.backtrack_limit', '10000000');
 
-        $sector = trim((string) $request->input('buscarSector', ''));
-        $manzana = trim((string) $request->input('buscarManzana', ''));
-        $tipoFicha = trim((string) $request->input('buscarTipo', ''));
+        $sector = trim(
+            (string) $request->input('buscarSector', '')
+        );
+
+        $manzana = trim(
+            (string) $request->input('buscarManzana', '')
+        );
+
+        $tipoFicha = trim(
+            (string) $request->input('buscarTipo', '')
+        );
 
         if (
-            $sector === '' || $sector === '0'
-            || $manzana === '' || $manzana === '0'
-            || $tipoFicha === '' || $tipoFicha === '0'
+            $sector === '' ||
+            $sector === '0' ||
+            $manzana === '' ||
+            $manzana === '0' ||
+            $tipoFicha === '' ||
+            $tipoFicha === '0'
         ) {
-            abort(422, 'Debe seleccionar sector, manzana y tipo de ficha.');
+            abort(
+                422,
+                'Debe seleccionar sector, manzana y tipo de ficha.'
+            );
         }
 
         $filas = DB::select(
             '
                 SELECT ficha
-                FROM catastro.fn_fichas_individuales_pdf(?, ?, ?)
+                FROM catastro.fn_fichas_individuales_pdf(
+                    ?,
+                    ?,
+                    ?
+                )
             ',
-            [$sector, $manzana, $tipoFicha]
+            [
+                $sector,
+                $manzana,
+                $tipoFicha,
+            ]
         );
 
         $fichas = collect($filas)
-            ->map(function (object $fila): object {
+            ->map(function ($fila) {
                 $ficha = json_decode(
                     $fila->ficha,
                     false,
@@ -243,18 +265,42 @@ class ReporteController extends Controller
             });
 
         if ($fichas->isEmpty()) {
-            abort(404, 'No existen fichas para los filtros seleccionados.');
+            abort(
+                404,
+                'No existen fichas para los filtros seleccionados.'
+            );
         }
 
-        $logos = Institucion::query()->first();
+        $fileName = 'individuales.pdf';
 
-        return view('pages.pdf.individuales', [
-            'sector' => $sector,
-            'manzana' => $manzana,
-            'tipo_ficha' => $tipoFicha,
-            'fichas' => $fichas,
-            'logos' => $logos,
+        $mpdf = new \Mpdf\Mpdf([
+            'format' => [210, 297],
+            'margin_left' => 10,
+            'margin_right' => 10,
+            'margin_top' => 10,
+            'margin_bottom' => 10,
+            'margin_header' => 10,
+            'margin_footer' => 10,
         ]);
+
+        $logos = Institucion::first();
+
+        $html = \View::make(
+            'pages.pdf.individuales',
+            compact(
+                'fichas',
+                'logos',
+                'sector',
+                'manzana',
+                'tipoFicha'
+            )
+        );
+
+        $html = $html->render();
+
+        $mpdf->WriteHTML($html);
+
+        $mpdf->Output($fileName, 'I');
     }
 
     private function normalizarFichaPdf(object $ficha): object
