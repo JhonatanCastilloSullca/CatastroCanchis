@@ -141,7 +141,15 @@ Route::group(['middleware'=>['auth']], function () {
     Route::get('reporte/llenadoficha', 'App\Http\Controllers\ReporteController@llenadoficha')->name('reporte.llenadoficha');
     Route::get('reporte/porlote', 'App\Http\Controllers\ReporteController@porlote')->name('reporte.porlote');
     Route::get('reporte/actividadeconomica', 'App\Http\Controllers\ReporteController@actividadeconomica')->name('reporte.actividadeconomica');
-    Route::get('reporte/fichasmasivas', 'App\Http\Controllers\ReporteController@fichasmasivas')->name('reporte.fichasmasivas');
+    Route::get(
+        'reporte/fichasmasivas',
+        [App\Http\Controllers\ReporteController::class, 'fichasmasivas']
+    )->name('reporte.fichasmasivas');
+
+    Route::get(
+        'reporte/fichasmasivas/pdf',
+        [App\Http\Controllers\ReporteController::class, 'fichaIndividuales']
+    )->name('reporte.fichasmasivas.pdf');
 
     Route::get('reporte/fichaanexo', 'App\Http\Controllers\ReporteController@fichaanexo')->name('reporte.fichaanexo');
 

@@ -12,7 +12,13 @@
         <div class="card-body">
             <div class="row">
             <h4 class="mb-3">Reporte por fichas masivas</h4>
-            {!!Form::open(array('url'=>'reporte/fichasmasivas','method'=>'GET','autocomplete'=>'off','role'=>'search'))!!}
+            {!! Form::open([
+                'route' => 'reporte.fichasmasivas.pdf',
+                'method' => 'GET',
+                'autocomplete' => 'off',
+                'role' => 'search',
+                'target' => '_blank'
+            ]) !!}
             <div class="form-group row">
                 <div class="col-md-1" style="padding-top: 10px">
                         <span> <strong> Sector </strong></span>

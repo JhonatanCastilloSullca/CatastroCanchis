@@ -181,88 +181,118 @@ class ReporteController extends Controller
 
     public function fichasmasivas(Request $request)
     {
-         dd([
-            'url_completa' => $request->fullUrl(),
-            'todos_los_parametros' => $request->all(),
+        $sector2 = $request->input('buscarSector', '0');
+        $manzana2 = $request->input('buscarManzana', '0');
+        $tipoficha = $request->input('buscarTipo', '0');
 
-            'buscarSector_query' => $request->query('buscarSector'),
-            'buscarManzana_query' => $request->query('buscarManzana'),
-            'buscarTipo_query' => $request->query('buscarTipo'),
+        $sectores = Sectore::query()
+            ->orderBy('codi_sector')
+            ->get();
 
-            'buscarSector_input' => $request->input('buscarSector'),
-            'buscarManzana_input' => $request->input('buscarManzana'),
-            'buscarTipo_input' => $request->input('buscarTipo'),
+        $manzanas = Manzana::query()
+            ->orderBy('codi_mzna')
+            ->get();
+
+        return view('pages.reportes.fichasmasivas', [
+            'sectores' => $sectores,
+            'manzanas' => $manzanas,
+            'sector2' => $sector2,
+            'manzana2' => $manzana2,
+            'tipoficha' => $tipoficha,
         ]);
     }
 
-    public function fichaIndividuales($sector, $manzana, $tipo_ficha)
+    public function fichaIndividuales(Request $request)
     {
-        ini_set('pcre.backtrack_limit', '50000000');
-        ini_set('pcre.recursion_limit', '10000000');
-        ini_set('memory_limit', '512M');
-        set_time_limit(300);
+        $sector = trim(
+            (string) $request->input('buscarSector', '')
+        );
 
-        $fileName = 'Reporte Masivo de Fichas.pdf';
-        $mpdf = new \Mpdf\Mpdf([
-            'format' => [210, 297],
-            'margin_left' => 10,
-            'margin_right' => 10,
-            'margin_top' => 10,
-            'margin_bottom' => 10,
-            'margin_header' => 10,
-            'margin_footer' => 10,
+        $manzana = trim(
+            (string) $request->input('buscarManzana', '')
+        );
+
+        $tipoFicha = trim(
+            (string) $request->input('buscarTipo', '')
+        );
+
+        dd([
+            'url_completa' => $request->fullUrl(),
+            'parametros' => $request->all(),
+            'sector' => $sector,
+            'manzana' => $manzana,
+            'tipo_ficha' => $tipoFicha,
         ]);
-        $logos = Institucion::first();
-        switch ($tipo_ficha) {
-            case ('01'):
-                $fichas = Ficha::with('unicat')->with('unicat.edificacion')->with('unicat.edificacion.lote')->with('unicat.edificacion.lote.hab_urbana')->with('unicat.edificacion.lote.manzana')
-                    ->with('unicat.edificacion.lote.manzana.sectore')->with('puertas')->with('puertas.via')->with('titular')->with('titular.persona')->with('titulars')->with('domiciliotitular')
-                    ->with('domiciliotitular.distritos')->with('domiciliotitular.provincias')->with('domiciliotitular.departamento')->with('fichaindividual')->with('fichaindividual.uso')
-                    ->with('lindero')->with('serviciobasico')->with('construccions')->with('instalacions')->with('instalacions.codiinstalacion')->with('documento_adjuntos')->with('sunarp')
-                    ->with('litigantes')->with('litigantes.persona')->with('verificador')->with('declarante')->with('supervisor')->with('tecnico')
-                    ->where('activo', 'LIKE', '%%')->orderBy('nume_ficha', 'asc');
-                if ($sector != '0') {
-                    $fichas = $fichas->whereHas('lote.manzana', function ($query) use ($sector) {
-                        $query->where('id_sector', '=', $sector);
-                    });
-                }
-                if ($manzana != 0) {
-                    $fichas = $fichas->whereHas('lote', function ($query) use ($manzana) {
-                        $query->where('id_mzna', '=', $manzana);
-                    });
-                }
-                $fichas = $fichas->where('tipo_ficha', '=', $tipo_ficha);
-                $fichas = $fichas->get();
-                $html = \View::make('pages.pdf.individuales', compact('sector', 'fichas', 'logos'));
-                break;
-
-            case ('02'):
-                $html = \View::make('pages.pdf.cotitularidades', compact('sector', 'fichas', 'logos'));
-                break;
-
-            case ('04'):
-                $html = \View::make('pages.pdf.bienescomuneses', compact('sector', 'fichas', 'logos'));
-                break;
-
-            case ('03'):
-                $html = \View::make('pages.pdf.economicas', compact('sector', 'fichas', 'logos'));
-                break;
-
-            case ('05'):
-                $html = \View::make('pages.pdf.bienculturaleses', compact('sector', 'fichas', 'logos'));
-                break;
-
-            case ('06'):
-                $html = \View::make('pages.pdf.rurales', compact('sector', 'fichas', 'logos'));
-                break;
-
-            default:
-                $html = \View::make('pages.pdf.individuales', compact('sector', 'fichas', 'logos'));
-        }
-        $html = $html->render();
-        $mpdf->WriteHTML($html);
-        $mpdf->Output($fileName, 'D');
     }
+
+    // public function fichaIndividuales($sector, $manzana, $tipo_ficha)
+    // {
+    //     ini_set('pcre.backtrack_limit', '50000000');
+    //     ini_set('pcre.recursion_limit', '10000000');
+    //     ini_set('memory_limit', '512M');
+    //     set_time_limit(300);
+
+    //     $fileName = 'Reporte Masivo de Fichas.pdf';
+    //     $mpdf = new \Mpdf\Mpdf([
+    //         'format' => [210, 297],
+    //         'margin_left' => 10,
+    //         'margin_right' => 10,
+    //         'margin_top' => 10,
+    //         'margin_bottom' => 10,
+    //         'margin_header' => 10,
+    //         'margin_footer' => 10,
+    //     ]);
+    //     $logos = Institucion::first();
+    //     switch ($tipo_ficha) {
+    //         case ('01'):
+    //             $fichas = Ficha::with('unicat')->with('unicat.edificacion')->with('unicat.edificacion.lote')->with('unicat.edificacion.lote.hab_urbana')->with('unicat.edificacion.lote.manzana')
+    //                 ->with('unicat.edificacion.lote.manzana.sectore')->with('puertas')->with('puertas.via')->with('titular')->with('titular.persona')->with('titulars')->with('domiciliotitular')
+    //                 ->with('domiciliotitular.distritos')->with('domiciliotitular.provincias')->with('domiciliotitular.departamento')->with('fichaindividual')->with('fichaindividual.uso')
+    //                 ->with('lindero')->with('serviciobasico')->with('construccions')->with('instalacions')->with('instalacions.codiinstalacion')->with('documento_adjuntos')->with('sunarp')
+    //                 ->with('litigantes')->with('litigantes.persona')->with('verificador')->with('declarante')->with('supervisor')->with('tecnico')
+    //                 ->where('activo', 'LIKE', '%%')->orderBy('nume_ficha', 'asc');
+    //             if ($sector != '0') {
+    //                 $fichas = $fichas->whereHas('lote.manzana', function ($query) use ($sector) {
+    //                     $query->where('id_sector', '=', $sector);
+    //                 });
+    //             }
+    //             if ($manzana != 0) {
+    //                 $fichas = $fichas->whereHas('lote', function ($query) use ($manzana) {
+    //                     $query->where('id_mzna', '=', $manzana);
+    //                 });
+    //             }
+    //             $fichas = $fichas->where('tipo_ficha', '=', $tipo_ficha);
+    //             $fichas = $fichas->get();
+    //             $html = \View::make('pages.pdf.individuales', compact('sector', 'fichas', 'logos'));
+    //             break;
+
+    //         case ('02'):
+    //             $html = \View::make('pages.pdf.cotitularidades', compact('sector', 'fichas', 'logos'));
+    //             break;
+
+    //         case ('04'):
+    //             $html = \View::make('pages.pdf.bienescomuneses', compact('sector', 'fichas', 'logos'));
+    //             break;
+
+    //         case ('03'):
+    //             $html = \View::make('pages.pdf.economicas', compact('sector', 'fichas', 'logos'));
+    //             break;
+
+    //         case ('05'):
+    //             $html = \View::make('pages.pdf.bienculturaleses', compact('sector', 'fichas', 'logos'));
+    //             break;
+
+    //         case ('06'):
+    //             $html = \View::make('pages.pdf.rurales', compact('sector', 'fichas', 'logos'));
+    //             break;
+
+    //         default:
+    //             $html = \View::make('pages.pdf.individuales', compact('sector', 'fichas', 'logos'));
+    //     }
+    //     $html = $html->render();
+    //     $mpdf->WriteHTML($html);
+    //     $mpdf->Output($fileName, 'D');
+    // }
 
     public function verficha(Request $request)
     {
