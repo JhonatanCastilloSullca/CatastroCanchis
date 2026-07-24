@@ -202,67 +202,86 @@ class ReporteController extends Controller
         ]);
     }
 
-   public function fichaIndividuales(Request $request)
-{
-    $sector = trim(
-        (string) $request->input('buscarSector', '')
-    );
+    public function fichaIndividuales(Request $request)
+    {
+        set_time_limit(0);
 
-    $manzana = trim(
-        (string) $request->input('buscarManzana', '')
-    );
+        ini_set('max_execution_time', '0');
+        ini_set('memory_limit', '1024M');
+        ini_set('pcre.backtrack_limit', '10000000');
 
-    $tipoFicha = trim(
-        (string) $request->input('buscarTipo', '')
-    );
-
-    if (
-        $sector === '' ||
-        $sector === '0' ||
-        $manzana === '' ||
-        $manzana === '0' ||
-        $tipoFicha === '' ||
-        $tipoFicha === '0'
-    ) {
-        abort(
-            422,
-            'Debe seleccionar sector, manzana y tipo de ficha.'
+        $sector = trim(
+            (string) $request->input('buscarSector', '')
         );
+
+        $manzana = trim(
+            (string) $request->input('buscarManzana', '')
+        );
+
+        $tipoFicha = trim(
+            (string) $request->input('buscarTipo', '')
+        );
+
+        if (
+            $sector === '' ||
+            $sector === '0' ||
+            $manzana === '' ||
+            $manzana === '0' ||
+            $tipoFicha === '' ||
+            $tipoFicha === '0'
+        ) {
+            abort(
+                422,
+                'Debe seleccionar sector, manzana y tipo de ficha.'
+            );
+        }
+
+        $registros = collect(
+            DB::select(
+                '
+                    SELECT *
+                    FROM catastro.fn_fichas_individuales_pdf(
+                        ?,
+                        ?,
+                        ?
+                    )
+                    ORDER BY nume_ficha
+                ',
+                [
+                    $sector,
+                    $manzana,
+                    $tipoFicha,
+                ]
+            )
+        );
+
+        if ($registros->isEmpty()) {
+            abort(
+                404,
+                'No existen fichas para los filtros seleccionados.'
+            );
+        }
+
+        /*
+        * Convierte la respuesta plana de PostgreSQL a la estructura
+        * que utiliza tu Blade actual.
+        */
+        $fichas = $this->prepararFichasIndividuales($registros);
+
+        $logos = Institucion::query()->first();
+
+        /*
+        * Primero se muestra como HTML para verificar que todos
+        * los datos y el diseño estén correctos.
+        */
+        return view('pages.pdf.individuales', [
+            'sector' => $sector,
+            'manzana' => $manzana,
+            'tipo_ficha' => $tipoFicha,
+            'fichas' => $fichas,
+            'logos' => $logos,
+        ]);
     }
-
-    $inicio = microtime(true);
-
-    $registros = collect(
-        DB::select(
-            '
-                SELECT *
-                FROM catastro.fn_fichas_individuales_pdf(
-                    ?,
-                    ?,
-                    ?
-                )
-                ORDER BY nume_ficha
-            ',
-            [
-                $sector,
-                $manzana,
-                $tipoFicha,
-            ]
-        )
-    );
-
-    dd([
-        'sector' => $sector,
-        'manzana' => $manzana,
-        'tipo_ficha' => $tipoFicha,
-        'cantidad' => $registros->count(),
-        'tiempo_segundos' => round(
-            microtime(true) - $inicio,
-            4
-        ),
-        'fichas' => $registros->pluck('nume_ficha'),
-    ]);
-}
 
     // public function fichaIndividuales($sector, $manzana, $tipo_ficha)
     // {
