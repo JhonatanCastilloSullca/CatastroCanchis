@@ -259,40 +259,361 @@ class ReporteController extends Controller
 
     private function normalizarFichaPdf(object $ficha): object
     {
-        $ficha->titulars = collect($ficha->titulars ?? []);
-        $ficha->puertas = collect($ficha->puertas ?? []);
-        $ficha->construccions = collect($ficha->construccions ?? []);
-        $ficha->instalacions = collect($ficha->instalacions ?? []);
-        $ficha->litigantes = collect($ficha->litigantes ?? []);
-        $ficha->documento_adjuntos = collect($ficha->documento_adjuntos ?? []);
+        /*
+        * TITULARES
+        * Garantiza siempre:
+        *
+        * $ficha->titular
+        * $ficha->titular->persona
+        * $ficha->titulars
+        * $titular->persona
+        */
+        $titulares = collect($ficha->titulars ?? [])
+            ->map(function ($titular) {
+                $titular = is_object($titular)
+                    ? $titular
+                    : (object) [];
 
-        $ficha->titular = $this->objeto($ficha->titular ?? null);
-        $ficha->lindero = $this->objeto($ficha->lindero ?? null);
-        $ficha->serviciobasico = $this->objeto($ficha->serviciobasico ?? null);
-        $ficha->sunarp = $this->objeto($ficha->sunarp ?? null);
-        $ficha->domiciliotitular = $this->objeto(
-            $ficha->domiciliotitular ?? null
+                $titular->persona = isset($titular->persona)
+                    && is_object($titular->persona)
+                        ? $titular->persona
+                        : (object) [
+                            'id_persona' => null,
+                            'tipo_doc' => null,
+                            'nume_doc' => null,
+                            'tipo_persona' => null,
+                            'nombres' => null,
+                            'ape_paterno' => null,
+                            'ape_materno' => null,
+                            'tipo_persona_juridica' => null,
+                            'razon_social' => null,
+                        ];
+
+                $titular->form_adquisicion =
+                    $titular->form_adquisicion ?? null;
+
+                $titular->fecha_adquisicion =
+                    $titular->fecha_adquisicion ?? null;
+
+                $titular->porc_cotitular =
+                    $titular->porc_cotitular ?? null;
+
+                $titular->esta_civil =
+                    $titular->esta_civil ?? null;
+
+                $titular->fax =
+                    $titular->fax ?? null;
+
+                $titular->telf =
+                    $titular->telf ?? null;
+
+                $titular->anexo =
+                    $titular->anexo ?? null;
+
+                $titular->email =
+                    $titular->email ?? null;
+
+                $titular->nume_titular =
+                    $titular->nume_titular ?? null;
+
+                $titular->codi_contribuyente =
+                    $titular->codi_contribuyente ?? null;
+
+                $titular->cond_titular =
+                    $titular->cond_titular ?? null;
+
+                return $titular;
+            })
+            ->values();
+
+        $ficha->titulars = $titulares;
+
+        /*
+        * No uses directamente el titular recibido desde PostgreSQL.
+        * Toma el primero de titulars, que ya fue normalizado.
+        */
+        $ficha->titular = $titulares->first()
+            ?? (object) [
+                'id_persona' => null,
+                'form_adquisicion' => null,
+                'fecha_adquisicion' => null,
+                'porc_cotitular' => null,
+                'esta_civil' => null,
+                'fax' => null,
+                'telf' => null,
+                'anexo' => null,
+                'email' => null,
+                'nume_titular' => null,
+                'codi_contribuyente' => null,
+                'cond_titular' => null,
+
+                'persona' => (object) [
+                    'id_persona' => null,
+                    'tipo_doc' => null,
+                    'nume_doc' => null,
+                    'tipo_persona' => null,
+                    'nombres' => null,
+                    'ape_paterno' => null,
+                    'ape_materno' => null,
+                    'tipo_persona_juridica' => null,
+                    'razon_social' => null,
+                ],
+            ];
+
+        /*
+        * PUERTAS
+        */
+        $ficha->puertas = collect($ficha->puertas ?? [])
+            ->map(function ($puerta) {
+                $puerta = is_object($puerta)
+                    ? $puerta
+                    : (object) [];
+
+                $puerta->via = isset($puerta->via)
+                    && is_object($puerta->via)
+                        ? $puerta->via
+                        : (object) [
+                            'id_via' => null,
+                            'codi_via' => null,
+                            'tipo_via' => null,
+                            'nomb_via' => null,
+                        ];
+
+                return $puerta;
+            });
+
+        /*
+        * COLECCIONES
+        */
+        $ficha->construccions = collect(
+            $ficha->construccions ?? []
         );
 
-        if (!isset($ficha->domiciliotitular->distritos)) {
-            $ficha->domiciliotitular->distritos = collect();
-        } else {
-            $ficha->domiciliotitular->distritos = collect(
-                $ficha->domiciliotitular->distritos
-            );
-        }
+        $ficha->instalacions = collect(
+            $ficha->instalacions ?? []
+        );
 
-        if (!isset($ficha->domiciliotitular->provincias)) {
-            $ficha->domiciliotitular->provincias = collect();
-        } else {
-            $ficha->domiciliotitular->provincias = collect(
-                $ficha->domiciliotitular->provincias
-            );
-        }
+        $ficha->litigantes = collect(
+            $ficha->litigantes ?? []
+        )->map(function ($litigante) {
+            $litigante = is_object($litigante)
+                ? $litigante
+                : (object) [];
 
-        if (!property_exists($ficha->domiciliotitular, 'departamento')) {
-            $ficha->domiciliotitular->departamento = null;
-        }
+            $litigante->persona = isset($litigante->persona)
+                && is_object($litigante->persona)
+                    ? $litigante->persona
+                    : (object) [];
+
+            return $litigante;
+        });
+
+        $ficha->documento_adjuntos = collect(
+            $ficha->documento_adjuntos ?? []
+        );
+
+        /*
+        * OBJETOS SIMPLES
+        */
+        $ficha->lindero = $this->objetoConDefectos(
+            $ficha->lindero ?? null,
+            [
+                'fren_campo' => null,
+                'fren_titulo' => null,
+                'fren_colinda_campo' => null,
+                'fren_colinda_titulo' => null,
+
+                'dere_campo' => null,
+                'dere_titulo' => null,
+                'dere_colinda_campo' => null,
+                'dere_colinda_titulo' => null,
+
+                'izqu_campo' => null,
+                'izqu_titulo' => null,
+                'izqu_colinda_campo' => null,
+                'izqu_colinda_titulo' => null,
+
+                'fond_campo' => null,
+                'fond_titulo' => null,
+                'fond_colinda_campo' => null,
+                'fond_colinda_titulo' => null,
+            ]
+        );
+
+        $ficha->serviciobasico = $this->objetoConDefectos(
+            $ficha->serviciobasico ?? null,
+            [
+                'luz' => null,
+                'agua' => null,
+                'telefono' => null,
+                'desague' => null,
+                'gas' => null,
+                'internet' => null,
+                'tvcable' => null,
+                'nume_sum_luz' => null,
+                'nume_telefono' => null,
+                'nume_contrato_agua' => null,
+            ]
+        );
+
+        $ficha->sunarp = $this->objetoConDefectos(
+            $ficha->sunarp ?? null,
+            [
+                'tipo_partida' => null,
+                'nume_partida' => null,
+                'fojas' => null,
+                'asiento' => null,
+                'fecha_inscripcion' => null,
+                'codi_decla_fabrica' => null,
+                'asie_fabrica' => null,
+                'fecha_fabrica' => null,
+            ]
+        );
+
+        /*
+        * DOMICILIO
+        */
+        $ficha->domiciliotitular = $this->objetoConDefectos(
+            $ficha->domiciliotitular ?? null,
+            [
+                'ubicacion' => null,
+                'codi_via' => null,
+                'tipo_via' => null,
+                'nomb_via' => null,
+                'nume_muni' => null,
+                'nomb_edificacion' => null,
+                'nume_interior' => null,
+                'codi_hab_urba' => null,
+                'nomb_hab_urba' => null,
+                'sector' => null,
+                'mzna' => null,
+                'lote' => null,
+                'sublote' => null,
+                'codi_dep' => null,
+                'codi_pro' => null,
+                'codi_dis' => null,
+                'departamento' => null,
+            ]
+        );
+
+        $ficha->domiciliotitular->distritos = collect(
+            $ficha->domiciliotitular->distritos ?? []
+        );
+
+        $ficha->domiciliotitular->provincias = collect(
+            $ficha->domiciliotitular->provincias ?? []
+        );
+
+        /*
+        * ESTRUCTURA PRINCIPAL
+        */
+        $ficha->unicat = $this->objetoConDefectos(
+            $ficha->unicat ?? null,
+            [
+                'cuc' => null,
+                'codi_cont_rentas' => null,
+                'codi_pred_rentas' => null,
+                'codi_entrada' => null,
+                'codi_piso' => null,
+                'codi_unidad' => null,
+                'tipo_interior' => null,
+                'nume_interior' => null,
+                'edificacion' => (object) [],
+            ]
+        );
+
+        $ficha->unicat->edificacion =
+            $this->objetoConDefectos(
+                $ficha->unicat->edificacion ?? null,
+                [
+                    'codi_edificacion' => null,
+                    'tipo_edificacion' => null,
+                    'lote' => (object) [],
+                ]
+            );
+
+        $ficha->unicat->edificacion->lote =
+            $this->objetoConDefectos(
+                $ficha->unicat->edificacion->lote ?? null,
+                [
+                    'codi_lote' => null,
+                    'zona_dist' => null,
+                    'mzna_dist' => null,
+                    'lote_dist' => null,
+                    'sub_lote_dist' => null,
+                    'zonificacion' => null,
+                    'estructuracion' => null,
+                    'manzana' => (object) [],
+                    'hab_urbana' => (object) [],
+                ]
+            );
+
+        $lote = $ficha->unicat->edificacion->lote;
+
+        $lote->manzana = $this->objetoConDefectos(
+            $lote->manzana ?? null,
+            [
+                'codi_mzna' => null,
+                'sectore' => (object) [],
+            ]
+        );
+
+        $lote->manzana->sectore =
+            $this->objetoConDefectos(
+                $lote->manzana->sectore ?? null,
+                [
+                    'codi_sector' => null,
+                    'nomb_sector' => null,
+                ]
+            );
+
+        $lote->hab_urbana =
+            $this->objetoConDefectos(
+                $lote->hab_urbana ?? null,
+                [
+                    'codi_hab_urba' => null,
+                    'tipo_hab_urba' => null,
+                    'nomb_hab_urba' => null,
+                ]
+            );
+
+        $ficha->fichaindividual =
+            $this->objetoConDefectos(
+                $ficha->fichaindividual ?? null,
+                [
+                    'codi_uso' => null,
+                    'cont_en' => null,
+                    'clasificacion' => null,
+                    'area_titulo' => null,
+                    'area_declarada' => null,
+                    'area_verificada' => null,
+                    'porc_bc_terr_legal' => null,
+                    'porc_bc_terr_fisc' => null,
+                    'porc_bc_const_legal' => null,
+                    'porc_bc_const_fisc' => null,
+                    'evaluacion' => null,
+                    'en_colindante' => null,
+                    'en_jardin_aislamiento' => null,
+                    'en_area_publica' => null,
+                    'en_area_intangible' => null,
+                    'cond_declarante' => null,
+                    'esta_llenado' => null,
+                    'nume_habitantes' => null,
+                    'nume_familias' => null,
+                    'mantenimiento' => null,
+                    'observaciones' => null,
+                    'uso' => (object) [],
+                ]
+            );
+
+        $ficha->fichaindividual->uso =
+            $this->objetoConDefectos(
+                $ficha->fichaindividual->uso ?? null,
+                [
+                    'codi_uso' => null,
+                    'desc_uso' => null,
+                ]
+            );
 
         return $ficha;
     }
@@ -300,6 +621,23 @@ class ReporteController extends Controller
     private function objeto(mixed $valor): object
     {
         return is_object($valor) ? $valor : (object) [];
+    }
+
+    private function objetoConDefectos(
+        mixed $valor,
+        array $defectos
+    ): object {
+        $objeto = is_object($valor)
+            ? $valor
+            : (object) [];
+
+        foreach ($defectos as $propiedad => $defecto) {
+            if (!property_exists($objeto, $propiedad)) {
+                $objeto->{$propiedad} = $defecto;
+            }
+        }
+
+        return $objeto;
     }
 
    
