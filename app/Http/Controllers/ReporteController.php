@@ -210,70 +210,44 @@ class ReporteController extends Controller
         ini_set('memory_limit', '1024M');
         ini_set('pcre.backtrack_limit', '10000000');
 
-        $sector = trim(
-            (string) $request->input('buscarSector', '')
-        );
-
-        $manzana = trim(
-            (string) $request->input('buscarManzana', '')
-        );
-
-        $tipoFicha = trim(
-            (string) $request->input('buscarTipo', '')
-        );
+        $sector = trim((string) $request->input('buscarSector', ''));
+        $manzana = trim((string) $request->input('buscarManzana', ''));
+        $tipoFicha = trim((string) $request->input('buscarTipo', ''));
 
         if (
-            $sector === '' ||
-            $sector === '0' ||
-            $manzana === '' ||
-            $manzana === '0' ||
-            $tipoFicha === '' ||
-            $tipoFicha === '0'
+            $sector === '' || $sector === '0'
+            || $manzana === '' || $manzana === '0'
+            || $tipoFicha === '' || $tipoFicha === '0'
         ) {
-            abort(
-                422,
-                'Debe seleccionar sector, manzana y tipo de ficha.'
-            );
+            abort(422, 'Debe seleccionar sector, manzana y tipo de ficha.');
         }
 
-        $registros = collect(
-            DB::select(
-                '
-                    SELECT *
-                    FROM catastro.fn_fichas_individuales_pdf(
-                        ?,
-                        ?,
-                        ?
-                    )
-                    ORDER BY nume_ficha
-                ',
-                [
-                    $sector,
-                    $manzana,
-                    $tipoFicha,
-                ]
-            )
+        $filas = DB::select(
+            '
+                SELECT ficha
+                FROM catastro.fn_fichas_individuales_pdf(?, ?, ?)
+            ',
+            [$sector, $manzana, $tipoFicha]
         );
 
-        if ($registros->isEmpty()) {
-            abort(
-                404,
-                'No existen fichas para los filtros seleccionados.'
-            );
-        }
+        $fichas = collect($filas)
+            ->map(function (object $fila): object {
+                $ficha = json_decode(
+                    $fila->ficha,
+                    false,
+                    512,
+                    JSON_THROW_ON_ERROR
+                );
 
-        /*
-        * Convierte la respuesta plana de PostgreSQL a la estructura
-        * que utiliza tu Blade actual.
-        */
-        $fichas = $this->prepararFichasIndividuales($registros);
+                return $this->normalizarFichaPdf($ficha);
+            });
+
+        if ($fichas->isEmpty()) {
+            abort(404, 'No existen fichas para los filtros seleccionados.');
+        }
 
         $logos = Institucion::query()->first();
 
-        /*
-        * Primero se muestra como HTML para verificar que todos
-        * los datos y el diseño estén correctos.
-        */
         return view('pages.pdf.individuales', [
             'sector' => $sector,
             'manzana' => $manzana,
@@ -283,511 +257,52 @@ class ReporteController extends Controller
         ]);
     }
 
-    private function prepararFichasIndividuales($registros)
+    private function normalizarFichaPdf(object $ficha): object
     {
-        return $registros->map(function ($registro) {
+        $ficha->titulars = collect($ficha->titulars ?? []);
+        $ficha->puertas = collect($ficha->puertas ?? []);
+        $ficha->construccions = collect($ficha->construccions ?? []);
+        $ficha->instalacions = collect($ficha->instalacions ?? []);
+        $ficha->litigantes = collect($ficha->litigantes ?? []);
+        $ficha->documento_adjuntos = collect($ficha->documento_adjuntos ?? []);
 
-            /*
-            * Convertir columnas JSON de PostgreSQL.
-            */
-            $titularesJson = json_decode(
-                $registro->titulares ?? '[]'
-            ) ?: [];
+        $ficha->titular = $this->objeto($ficha->titular ?? null);
+        $ficha->lindero = $this->objeto($ficha->lindero ?? null);
+        $ficha->serviciobasico = $this->objeto($ficha->serviciobasico ?? null);
+        $ficha->sunarp = $this->objeto($ficha->sunarp ?? null);
+        $ficha->domiciliotitular = $this->objeto(
+            $ficha->domiciliotitular ?? null
+        );
 
-            $puertasJson = json_decode(
-                $registro->puertas ?? '[]'
-            ) ?: [];
-
-            $domiciliosJson = json_decode(
-                $registro->domicilios ?? '[]'
-            ) ?: [];
-
-            $construccionesJson = json_decode(
-                $registro->construcciones ?? '[]'
-            ) ?: [];
-
-            $instalacionesJson = json_decode(
-                $registro->instalaciones ?? '[]'
-            ) ?: [];
-
-            $litigantesJson = json_decode(
-                $registro->litigantes ?? '[]'
-            ) ?: [];
-
-            $linderoJson = json_decode(
-                $registro->lindero ?? '{}'
+        if (!isset($ficha->domiciliotitular->distritos)) {
+            $ficha->domiciliotitular->distritos = collect();
+        } else {
+            $ficha->domiciliotitular->distritos = collect(
+                $ficha->domiciliotitular->distritos
             );
-
-
-            /*
-            * TITULARES
-            *
-            * Conserva:
-            * $titular->persona->nombres
-            * $titular->persona->tipo_persona
-            */
-            $titulares = collect($titularesJson)
-                ->map(function ($titular) {
-                    return (object) [
-                        'id_persona' =>
-                            $titular->id_persona ?? null,
-
-                        'form_adquisicion' =>
-                            $titular->form_adquisicion ?? null,
-
-                        'fecha_adquisicion' =>
-                            $titular->fecha_adquisicion ?? null,
-
-                        'porc_cotitular' =>
-                            $titular->porc_cotitular ?? null,
-
-                        'esta_civil' =>
-                            $titular->esta_civil ?? null,
-
-                        'fax' =>
-                            $titular->fax ?? null,
-
-                        'telf' =>
-                            $titular->telf ?? null,
-
-                        'anexo' =>
-                            $titular->anexo ?? null,
-
-                        'email' =>
-                            $titular->email ?? null,
-
-                        'nume_titular' =>
-                            $titular->nume_titular ?? null,
-
-                        'codi_contribuyente' =>
-                            $titular->codi_contribuyente ?? null,
-
-                        'cond_titular' =>
-                            $titular->cond_titular ?? null,
-
-                        'persona' => (object) [
-                            'id_persona' =>
-                                $titular->id_persona ?? null,
-
-                            'tipo_doc' =>
-                                $titular->tipo_doc ?? null,
-
-                            'nume_doc' =>
-                                $titular->nume_doc ?? null,
-
-                            'tipo_persona' =>
-                                $titular->tipo_persona ?? null,
-
-                            'nombres' =>
-                                $titular->nombres ?? null,
-
-                            'ape_paterno' =>
-                                $titular->ape_paterno ?? null,
-
-                            'ape_materno' =>
-                                $titular->ape_materno ?? null,
-
-                            'tipo_persona_juridica' =>
-                                $titular->tipo_persona_juridica ?? null,
-
-                            'razon_social' =>
-                                $titular->razon_social ?? null,
-                        ],
-                    ];
-                });
-
-            /*
-            * PUERTAS
-            *
-            * Conserva:
-            * $puerta->via->codi_via
-            * $puerta->via->nomb_via
-            */
-            $puertas = collect($puertasJson)
-                ->map(function ($puerta) {
-                    return (object) [
-                        'id_puerta' =>
-                            $puerta->id_puerta ?? null,
-
-                        'codi_puerta' =>
-                            $puerta->codi_puerta ?? null,
-
-                        'tipo_puerta' =>
-                            $puerta->tipo_puerta ?? null,
-
-                        'nume_muni' =>
-                            $puerta->nume_muni ?? null,
-
-                        'cond_nume' =>
-                            $puerta->cond_nume ?? null,
-
-                        'nume_certificacion' =>
-                            $puerta->nume_certificacion ?? null,
-
-                        'via' => (object) [
-                            'id_via' =>
-                                $puerta->id_via ?? null,
-
-                            'codi_via' =>
-                                $puerta->codi_via ?? null,
-
-                            'tipo_via' =>
-                                $puerta->tipo_via ?? null,
-
-                            'nomb_via' =>
-                                $puerta->nomb_via ?? null,
-                        ],
-                    ];
-                });
-
-            /*
-            * DOMICILIO
-            */
-            $domicilioJson = collect($domiciliosJson)->first();
-
-            $domicilio = $domicilioJson
-                ? (object) [
-                    'id_persona' =>
-                        $domicilioJson->id_persona ?? null,
-
-                    'ubicacion' =>
-                        $domicilioJson->ubicacion ?? null,
-
-                    'codi_via' =>
-                        $domicilioJson->codi_via ?? null,
-
-                    'tipo_via' =>
-                        $domicilioJson->tipo_via ?? null,
-
-                    'nomb_via' =>
-                        $domicilioJson->nomb_via ?? null,
-
-                    'nume_muni' =>
-                        $domicilioJson->nume_muni ?? null,
-
-                    'nomb_edificacion' =>
-                        $domicilioJson->nomb_edificacion ?? null,
-
-                    'nume_interior' =>
-                        $domicilioJson->nume_interior ?? null,
-
-                    'codi_hab_urba' =>
-                        $domicilioJson->codi_hab_urba ?? null,
-
-                    'nomb_hab_urba' =>
-                        $domicilioJson->nomb_hab_urba ?? null,
-
-                    'sector' =>
-                        $domicilioJson->sector ?? null,
-
-                    'mzna' =>
-                        $domicilioJson->mzna ?? null,
-
-                    'lote' =>
-                        $domicilioJson->lote ?? null,
-
-                    'sublote' =>
-                        $domicilioJson->sublote ?? null,
-
-                    'codi_dep' =>
-                        $domicilioJson->codi_dep ?? null,
-
-                    'codi_pro' =>
-                        $domicilioJson->codi_pro ?? null,
-
-                    'codi_dis' =>
-                        $domicilioJson->codi_dis ?? null,
-
-                    /*
-                    * Evita errores en los foreach actuales.
-                    */
-                    'distritos' => collect(),
-                    'provincias' => collect(),
-                    'departamento' => null,
-                ]
-                : null;
-
-            /*
-            * SECTOR
-            */
-            $sectorObjeto = (object) [
-                'id_sector' =>
-                    $registro->id_sector ?? null,
-
-                'codi_sector' =>
-                    $registro->codi_sector ?? null,
-
-                'nomb_sector' =>
-                    $registro->nomb_sector ?? null,
-            ];
-
-            /*
-            * MANZANA
-            */
-            $manzanaObjeto = (object) [
-                'id_mzna' =>
-                    $registro->id_mzna ?? null,
-
-                'codi_mzna' =>
-                    $registro->codi_mzna ?? null,
-
-                'nume_mzna' =>
-                    $registro->nume_mzna ?? null,
-
-                /*
-                * Tu Blade usa el nombre sectore.
-                */
-                'sectore' => $sectorObjeto,
-            ];
-
-            /*
-            * HABILITACIÓN URBANA
-            */
-            $habilitacionObjeto = (object) [
-                'id_hab_urba' =>
-                    $registro->id_hab_urba ?? null,
-
-                'codi_hab_urba' =>
-                    $registro->codi_hab_urba ?? null,
-
-                'tipo_hab_urba' =>
-                    $registro->tipo_hab_urba ?? null,
-
-                'nomb_hab_urba' =>
-                    $registro->nomb_hab_urba ?? null,
-            ];
-
-            /*
-            * LOTE
-            */
-            $loteObjeto = (object) [
-                'id_lote' =>
-                    $registro->id_lote ?? null,
-
-                'codi_lote' =>
-                    $registro->codi_lote ?? null,
-
-                'zona_dist' =>
-                    $registro->zona_dist ?? null,
-
-                'mzna_dist' =>
-                    $registro->mzna_dist ?? null,
-
-                'lote_dist' =>
-                    $registro->lote_dist ?? null,
-
-                'sub_lote_dist' =>
-                    $registro->sub_lote_dist ?? null,
-
-                'zonificacion' =>
-                    $registro->zonificacion ?? null,
-
-                'estructuracion' =>
-                    $registro->estructuracion ?? null,
-
-                'manzana' =>
-                    $manzanaObjeto,
-
-                'hab_urbana' =>
-                    $habilitacionObjeto,
-            ];
-
-            /*
-            * EDIFICACIÓN
-            */
-            $edificacionObjeto = (object) [
-                'id_edificacion' =>
-                    $registro->id_edificacion ?? null,
-
-                'codi_edificacion' =>
-                    $registro->codi_edificacion ?? null,
-
-                'tipo_edificacion' =>
-                    $registro->tipo_edificacion ?? null,
-
-                'lote' => $loteObjeto,
-            ];
-
-            /*
-            * UNIDAD CATASTRAL
-            */
-            $unicatObjeto = (object) [
-                'id_uni_cat' =>
-                    $registro->id_uni_cat ?? null,
-
-                'cuc' =>
-                    $registro->cuc ?? null,
-
-                'codi_entrada' =>
-                    $registro->codi_entrada ?? null,
-
-                'codi_piso' =>
-                    $registro->codi_piso ?? null,
-
-                'codi_unidad' =>
-                    $registro->codi_unidad ?? null,
-
-                'tipo_interior' =>
-                    $registro->tipo_interior ?? null,
-
-                'nume_interior' =>
-                    $registro->nume_interior ?? null,
-
-                'codi_pred_rentas' =>
-                    $registro->codi_pred_rentas ?? null,
-
-                'codi_cont_rentas' =>
-                    $registro->codi_cont_rentas ?? null,
-
-                'edificacion' => $edificacionObjeto,
-            ];
-
-            /*
-            * FICHA INDIVIDUAL
-            */
-            $fichaIndividualObjeto = (object) [
-                'codi_uso' =>
-                    $registro->codi_uso ?? null,
-
-                'cont_en' =>
-                    $registro->cont_en ?? null,
-
-                'clasificacion' =>
-                    $registro->clasificacion_ficha ?? null,
-
-                'area_titulo' =>
-                    $registro->area_titulo ?? null,
-
-                'area_declarada' =>
-                    $registro->area_declarada ?? null,
-
-                'area_verificada' =>
-                    $registro->area_verificada ?? null,
-
-                'evaluacion' =>
-                    $registro->evaluacion ?? null,
-
-                'cond_declarante' =>
-                    $registro->cond_declarante ?? null,
-
-                'esta_llenado' =>
-                    $registro->esta_llenado ?? null,
-
-                'nume_habitantes' =>
-                    $registro->nume_habitantes ?? null,
-
-                'nume_familias' =>
-                    $registro->nume_familias ?? null,
-
-                'mantenimiento' =>
-                    $registro->mantenimiento ?? null,
-
-                'observaciones' =>
-                    $registro->observaciones ?? null,
-
-                'imagen_lote' =>
-                    $registro->imagen_lote ?? null,
-
-                'imagen_plano' =>
-                    $registro->imagen_plano ?? null,
-
-                'uso' => (object) [
-                    'codi_uso' =>
-                        $registro->codi_uso ?? null,
-
-                    'desc_uso' =>
-                        $registro->desc_uso ?? null,
-                ],
-            ];
-
-            /*
-            * RESPONSABLES
-            */
-            $registro->declarante = (object) [
-                'id_persona' =>
-                    $registro->id_declarante ?? null,
-
-                'nombre_completo' =>
-                    $registro->nombre_declarante ?? null,
-            ];
-
-            $registro->supervisor = (object) [
-                'id_persona' =>
-                    $registro->id_supervisor ?? null,
-
-                'nombre_completo' =>
-                    $registro->nombre_supervisor ?? null,
-            ];
-
-            $registro->tecnico = (object) [
-                'id_persona' =>
-                    $registro->id_tecnico ?? null,
-
-                'nombre_completo' =>
-                    $registro->nombre_tecnico ?? null,
-            ];
-
-            $registro->verificador = (object) [
-                'id_persona' =>
-                    $registro->id_verificador ?? null,
-
-                'nombre_completo' =>
-                    $registro->nombre_verificador ?? null,
-            ];
-
-            /*
-            * ASIGNAR ESTRUCTURAS COMPATIBLES
-            */
-            $registro->unicat = $unicatObjeto;
-
-            $registro->fichaindividual =
-                $fichaIndividualObjeto;
-
-            $registro->titulars = $titulares;
-
-            $registro->titular = $titulares->first();
-
-            $registro->puertas = $puertas;
-
-            $registro->domiciliotitular = $domicilio;
-
-            $registro->construcciones = collect(
-                $construccionesJson
+        }
+
+        if (!isset($ficha->domiciliotitular->provincias)) {
+            $ficha->domiciliotitular->provincias = collect();
+        } else {
+            $ficha->domiciliotitular->provincias = collect(
+                $ficha->domiciliotitular->provincias
             );
+        }
 
-            $registro->instalaciones = collect(
-                $instalacionesJson
-            );
+        if (!property_exists($ficha->domiciliotitular, 'departamento')) {
+            $ficha->domiciliotitular->departamento = null;
+        }
 
-            $registro->litigantes = collect(
-                $litigantesJson
-            );
-
-            $registro->lindero = $linderoJson ?: (object) [
-                'fren_campo' => null,
-                'fren_titulo' => null,
-                'fren_colinda_campo' => null,
-                'fren_colinda_titulo' => null,
-
-                'dere_campo' => null,
-                'dere_titulo' => null,
-                'dere_colinda_campo' => null,
-                'dere_colinda_titulo' => null,
-
-                'izqu_campo' => null,
-                'izqu_titulo' => null,
-                'izqu_colinda_campo' => null,
-                'izqu_colinda_titulo' => null,
-
-                'fond_campo' => null,
-                'fond_titulo' => null,
-                'fond_colinda_campo' => null,
-                'fond_colinda_titulo' => null,
-            ];
-
-            return $registro;
-        });
+        return $ficha;
     }
+
+    private function objeto(mixed $valor): object
+    {
+        return is_object($valor) ? $valor : (object) [];
+    }
+
+   
 
     // public function fichaIndividuales($sector, $manzana, $tipo_ficha)
     // {
