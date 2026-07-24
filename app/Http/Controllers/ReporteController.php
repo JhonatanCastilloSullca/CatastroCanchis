@@ -210,30 +210,16 @@ class ReporteController extends Controller
         ini_set('memory_limit', '1024M');
         ini_set('pcre.backtrack_limit', '10000000');
 
-        $sector = trim(
-            (string) $request->input('buscarSector', '')
-        );
-
-        $manzana = trim(
-            (string) $request->input('buscarManzana', '')
-        );
-
-        $tipoFicha = trim(
-            (string) $request->input('buscarTipo', '')
-        );
+        $sector = trim((string) $request->input('buscarSector', ''));
+        $manzana = trim((string) $request->input('buscarManzana', ''));
+        $tipoFicha = trim((string) $request->input('buscarTipo', ''));
 
         if (
-            $sector === '' ||
-            $sector === '0' ||
-            $manzana === '' ||
-            $manzana === '0' ||
-            $tipoFicha === '' ||
-            $tipoFicha === '0'
+            $sector === '' || $sector === '0' ||
+            $manzana === '' || $manzana === '0' ||
+            $tipoFicha === '' || $tipoFicha === '0'
         ) {
-            abort(
-                422,
-                'Debe seleccionar sector, manzana y tipo de ficha.'
-            );
+            abort(422, 'Debe seleccionar sector, manzana y tipo de ficha.');
         }
 
         $filas = DB::select(
@@ -252,23 +238,19 @@ class ReporteController extends Controller
             ]
         );
 
-        $fichas = collect($filas)
-            ->map(function ($fila) {
-                $ficha = json_decode(
-                    $fila->ficha,
-                    false,
-                    512,
-                    JSON_THROW_ON_ERROR
-                );
+        $fichas = collect($filas)->map(function ($fila) {
+            $ficha = json_decode(
+                $fila->ficha,
+                false,
+                512,
+                JSON_THROW_ON_ERROR
+            );
 
-                return $this->normalizarFichaPdf($ficha);
-            });
+            return $this->normalizarFichaPdf($ficha);
+        });
 
         if ($fichas->isEmpty()) {
-            abort(
-                404,
-                'No existen fichas para los filtros seleccionados.'
-            );
+            abort(404, 'No existen fichas para los filtros seleccionados.');
         }
 
         $fileName = 'individuales.pdf';
@@ -285,20 +267,23 @@ class ReporteController extends Controller
 
         $logos = Institucion::first();
 
-        $html = \View::make(
-            'pages.pdf.individuales',
-            compact(
-                'fichas',
-                'logos',
-                'sector',
-                'manzana',
-                'tipoFicha'
-            )
-        );
+        $total = $fichas->count();
 
-        $html = $html->render();
+        foreach ($fichas as $indice => $ficha) {
+            $html = \View::make(
+                'pages.pdf.individuales',
+                [
+                    'fichas' => collect([$ficha]),
+                    'logos' => $logos,
+                    'esUltimaFicha' => $indice === ($total - 1),
+                ]
+            )->render();
 
-        $mpdf->WriteHTML($html);
+            $mpdf->WriteHTML($html);
+
+            unset($html);
+            gc_collect_cycles();
+        }
 
         $mpdf->Output($fileName, 'I');
     }

@@ -186,6 +186,10 @@
 </head>
 
 <body>
+    @php
+        $fichas = $fichas ?? collect();
+    @endphp
+
     @foreach ($fichas as $ficha)
 
         <div style="width: 716px;height:16px;margin: auto;border:none;">
