@@ -574,9 +574,17 @@ class ReporteController extends Controller
                 'sub_lote_dist' =>
                     $registro->sub_lote_dist ?? null,
 
-                'manzana' => $manzanaObjeto,
+                'zonificacion' =>
+                    $registro->zonificacion ?? null,
 
-                'hab_urbana' => $habilitacionObjeto,
+                'estructuracion' =>
+                    $registro->estructuracion ?? null,
+
+                'manzana' =>
+                    $manzanaObjeto,
+
+                'hab_urbana' =>
+                    $habilitacionObjeto,
             ];
 
             /*
