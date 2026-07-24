@@ -872,437 +872,60 @@ class FichaController extends Controller
         $mpdf->Output($fileName, 'I');
     }
 
-    public function fichaIndividuales(
-        $sector,
-        $manzana,
-        $tipo_ficha
-    ) {
-        ini_set('max_execution_time', '0');
-        ini_set('memory_limit', '1024M');
-        ini_set('pcre.backtrack_limit', '10000000');
-        ini_set('pcre.recursion_limit', '1000000');
-
-        /*
-        * La consulta se ejecuta directamente sobre la vista PostgreSQL.
-        * Aquí sí se filtra por sector, manzana y tipo de ficha.
-        */
-        $registros = DB::table(
-            'catastro.vw_fichas_individuales_pdf'
-        )
-            ->where('codi_sector', trim($sector))
-            ->where('codi_mzna', trim($manzana))
-            ->where('tipo_ficha', trim($tipo_ficha))
-            ->orderBy('nume_ficha')
-            ->get();
-
-        if ($registros->isEmpty()) {
-            abort(
-                404,
-                'No existen fichas para el sector, manzana y tipo seleccionados.'
-            );
-        }
-
-        /*
-        * Convertimos las columnas planas y JSON de PostgreSQL
-        * a una estructura compatible con tu Blade actual.
-        */
-        $fichas = $registros->map(function ($registro) {
-            $titulares = json_decode(
-                $registro->titulares ?? '[]'
-            ) ?: [];
-
-            $puertas = json_decode(
-                $registro->puertas ?? '[]'
-            ) ?: [];
-
-            $domicilios = json_decode(
-                $registro->domicilios ?? '[]'
-            ) ?: [];
-
-            $construcciones = json_decode(
-                $registro->construcciones ?? '[]'
-            ) ?: [];
-
-            $instalaciones = json_decode(
-                $registro->instalaciones ?? '[]'
-            ) ?: [];
-
-            $litigantes = json_decode(
-                $registro->litigantes ?? '[]'
-            ) ?: [];
-
-            /*
-            * Preparar titulares para conservar:
-            *
-            * $titular->persona->nombres
-            * $titular->persona->nume_doc
-            * $titular->esta_civil
-            */
-            $titularesCompatibles = collect($titulares)
-                ->map(function ($titular) {
-                    $persona = (object) [
-                        'id_persona' => $titular->id_persona ?? null,
-                        'tipo_doc' => $titular->tipo_doc ?? null,
-                        'nume_doc' => $titular->nume_doc ?? null,
-                        'tipo_persona' => $titular->tipo_persona ?? null,
-                        'nombres' => $titular->nombres ?? null,
-                        'ape_paterno' => $titular->ape_paterno ?? null,
-                        'ape_materno' => $titular->ape_materno ?? null,
-                        'tipo_persona_juridica' =>
-                            $titular->tipo_persona_juridica ?? null,
-                        'razon_social' => $titular->razon_social ?? null,
-                    ];
-
-                    return (object) [
-                        'id_persona' => $titular->id_persona ?? null,
-                        'persona' => $persona,
-
-                        'form_adquisicion' =>
-                            $titular->form_adquisicion ?? null,
-
-                        'fecha_adquisicion' =>
-                            $titular->fecha_adquisicion ?? null,
-
-                        'porc_cotitular' =>
-                            $titular->porc_cotitular ?? null,
-
-                        'esta_civil' => $titular->esta_civil ?? null,
-                        'fax' => $titular->fax ?? null,
-                        'telf' => $titular->telf ?? null,
-                        'anexo' => $titular->anexo ?? null,
-                        'email' => $titular->email ?? null,
-                        'nume_titular' => $titular->nume_titular ?? null,
-
-                        'codi_contribuyente' =>
-                            $titular->codi_contribuyente ?? null,
-
-                        'cond_titular' =>
-                            $titular->cond_titular ?? null,
-                    ];
-                });
-
-            /*
-            * Preparar puertas para conservar:
-            *
-            * $puerta->via->codi_via
-            * $puerta->via->nomb_via
-            */
-            $puertasCompatibles = collect($puertas)
-                ->map(function ($puerta) {
-                    return (object) [
-                        'id_puerta' => $puerta->id_puerta ?? null,
-                        'codi_puerta' => $puerta->codi_puerta ?? null,
-                        'tipo_puerta' => $puerta->tipo_puerta ?? null,
-                        'nume_muni' => $puerta->nume_muni ?? null,
-                        'cond_nume' => $puerta->cond_nume ?? null,
-
-                        'via' => (object) [
-                            'id_via' => $puerta->id_via ?? null,
-                            'codi_via' => $puerta->codi_via ?? null,
-                            'tipo_via' => $puerta->tipo_via ?? null,
-                            'nomb_via' => $puerta->nomb_via ?? null,
-                        ],
-                    ];
-                });
-
-            /*
-            * Tomamos el primer domicilio para mantener:
-            *
-            * $ficha->domiciliotitular->codi_via
-            */
-            $domicilio = collect($domicilios)->first();
-
-            $domicilioCompatible = $domicilio
-                ? (object) [
-                    'id_persona' => $domicilio->id_persona ?? null,
-                    'ubicacion' => $domicilio->ubicacion ?? null,
-                    'codi_via' => $domicilio->codi_via ?? null,
-                    'tipo_via' => $domicilio->tipo_via ?? null,
-                    'nomb_via' => $domicilio->nomb_via ?? null,
-                    'nume_muni' => $domicilio->nume_muni ?? null,
-
-                    'nomb_edificacion' =>
-                        $domicilio->nomb_edificacion ?? null,
-
-                    'nume_interior' => $domicilio->nume_interior ?? null,
-                    'codi_hab_urba' => $domicilio->codi_hab_urba ?? null,
-
-                    'nomb_hab_urba' =>
-                        $domicilio->nomb_hab_urba ?? null,
-
-                    'sector' => $domicilio->sector ?? null,
-                    'mzna' => $domicilio->mzna ?? null,
-                    'lote' => $domicilio->lote ?? null,
-                    'sublote' => $domicilio->sublote ?? null,
-                    'codi_dep' => $domicilio->codi_dep ?? null,
-                    'codi_pro' => $domicilio->codi_pro ?? null,
-                    'codi_dis' => $domicilio->codi_dis ?? null,
-
-                    /*
-                    * Se dejan como colecciones vacías para evitar
-                    * errores mientras no estén en la vista PostgreSQL.
-                    */
-                    'distritos' => collect(),
-                    'provincias' => collect(),
-                    'departamento' => null,
-                ]
-                : null;
-
-            /*
-            * Estructura compatible con:
-            *
-            * $ficha->unicat->edificacion->lote...
-            */
-            $sectorCompatible = (object) [
-                'id_sector' => $registro->id_sector ?? null,
-                'codi_sector' => $registro->codi_sector ?? null,
-                'nomb_sector' => $registro->nomb_sector ?? null,
-            ];
-
-            $manzanaCompatible = (object) [
-                'id_mzna' => $registro->id_mzna ?? null,
-                'codi_mzna' => $registro->codi_mzna ?? null,
-                'nume_mzna' => $registro->nume_mzna ?? null,
-                'sectore' => $sectorCompatible,
-            ];
-
-            $habilitacionCompatible = (object) [
-                'id_hab_urba' => $registro->id_hab_urba ?? null,
-                'grup_urba' => $registro->grup_urba ?? null,
-                'tipo_hab_urba' => $registro->tipo_hab_urba ?? null,
-                'nomb_hab_urba' => $registro->nomb_hab_urba ?? null,
-                'codi_hab_urba' => $registro->codi_hab_urba ?? null,
-            ];
-
-            $loteCompatible = (object) [
-                'id_lote' => $registro->id_lote ?? null,
-                'codi_lote' => $registro->codi_lote ?? null,
-                'mzna_dist' => $registro->mzna_dist ?? null,
-                'lote_dist' => $registro->lote_dist ?? null,
-                'sub_lote_dist' => $registro->sub_lote_dist ?? null,
-                'estructuracion' => $registro->estructuracion ?? null,
-                'zonificacion' => $registro->zonificacion ?? null,
-                'zona_dist' => $registro->zona_dist ?? null,
-
-                'manzana' => $manzanaCompatible,
-                'hab_urbana' => $habilitacionCompatible,
-            ];
-
-            $edificacionCompatible = (object) [
-                'id_edificacion' =>
-                    $registro->id_edificacion ?? null,
-
-                'codi_edificacion' =>
-                    $registro->codi_edificacion ?? null,
-
-                'tipo_edificacion' =>
-                    $registro->tipo_edificacion ?? null,
-
-                'nomb_edificacion' =>
-                    $registro->nomb_edificacion ?? null,
-
-                'clasificacion' =>
-                    $registro->clasificacion_edificacion ?? null,
-
-                'lote' => $loteCompatible,
-            ];
-
-            $unicatCompatible = (object) [
-                'id_uni_cat' => $registro->id_uni_cat ?? null,
-                'cuc' => $registro->cuc ?? null,
-
-                'cuc_antecedente' =>
-                    $registro->cuc_antecedente ?? null,
-
-                'codi_hoja_catastral' =>
-                    $registro->codi_hoja_catastral ?? null,
-
-                'codi_pred_rentas' =>
-                    $registro->codi_pred_rentas ?? null,
-
-                'codi_cont_rentas' =>
-                    $registro->codi_cont_rentas ?? null,
-
-                'codi_entrada' => $registro->codi_entrada ?? null,
-                'codi_piso' => $registro->codi_piso ?? null,
-                'codi_unidad' => $registro->codi_unidad ?? null,
-                'tipo_interior' => $registro->tipo_interior ?? null,
-                'nume_interior' => $registro->nume_interior ?? null,
-
-                'edificacion' => $edificacionCompatible,
-            ];
-
-            /*
-            * Esta estructura mantiene los campos que antes
-            * venían desde $ficha->fichaindividual.
-            */
-            $fichaIndividualCompatible = (object) [
-                'codi_uso' => $registro->codi_uso ?? null,
-                'cont_en' => $registro->cont_en ?? null,
-
-                'clasificacion' =>
-                    $registro->clasificacion_ficha ?? null,
-
-                'area_titulo' => $registro->area_titulo ?? null,
-                'area_declarada' => $registro->area_declarada ?? null,
-                'area_verificada' => $registro->area_verificada ?? null,
-
-                'porc_bc_terr_legal' =>
-                    $registro->porc_bc_terr_legal ?? null,
-
-                'porc_bc_terr_fisc' =>
-                    $registro->porc_bc_terr_fisc ?? null,
-
-                'porc_bc_const_legal' =>
-                    $registro->porc_bc_const_legal ?? null,
-
-                'porc_bc_const_fisc' =>
-                    $registro->porc_bc_const_fisc ?? null,
-
-                'evaluacion' => $registro->evaluacion ?? null,
-                'en_colindante' => $registro->en_colindante ?? null,
-
-                'en_jardin_aislamiento' =>
-                    $registro->en_jardin_aislamiento ?? null,
-
-                'en_area_publica' =>
-                    $registro->en_area_publica ?? null,
-
-                'en_area_intangible' =>
-                    $registro->en_area_intangible ?? null,
-
-                'cond_declarante' =>
-                    $registro->cond_declarante ?? null,
-
-                'esta_llenado' => $registro->esta_llenado ?? null,
-                'nume_habitantes' => $registro->nume_habitantes ?? null,
-                'nume_familias' => $registro->nume_familias ?? null,
-                'mantenimiento' => $registro->mantenimiento ?? null,
-                'observaciones' => $registro->observaciones ?? null,
-
-                /*
-                * Estos campos deben existir en tu vista PostgreSQL
-                * si quieres conservar las dos imágenes.
-                */
-                'imagen_lote' => $registro->imagen_lote ?? null,
-                'imagen_plano' => $registro->imagen_plano ?? null,
-
-                'uso' => (object) [
-                    'codi_uso' => $registro->codi_uso ?? null,
-                    'desc_uso' => $registro->desc_uso ?? null,
-                ],
-            ];
-
-            /*
-            * Agregamos las propiedades compatibles al objeto.
-            */
-            $registro->unicat = $unicatCompatible;
-            $registro->fichaindividual = $fichaIndividualCompatible;
-
-            $registro->titulars = $titularesCompatibles;
-            $registro->titular = $titularesCompatibles->first();
-
-            $registro->puertas = $puertasCompatibles;
-            $registro->domiciliotitular = $domicilioCompatible;
-
-            $registro->construcciones = collect($construcciones);
-            $registro->instalaciones = collect($instalaciones);
-            $registro->litigantes = collect($litigantes);
-
-            /*
-            * Responsables.
-            */
-            $registro->declarante = (object) [
-                'id_persona' => $registro->id_declarante ?? null,
-                'nombres' => $registro->declarante_nombres ?? null,
-                'ape_paterno' =>
-                    $registro->declarante_ape_paterno ?? null,
-                'ape_materno' =>
-                    $registro->declarante_ape_materno ?? null,
-                'nume_doc' => $registro->declarante_nume_doc ?? null,
-            ];
-
-            $registro->supervisor = (object) [
-                'id_persona' => $registro->id_supervisor ?? null,
-                'nombres' => $registro->supervisor_nombres ?? null,
-                'ape_paterno' =>
-                    $registro->supervisor_ape_paterno ?? null,
-                'ape_materno' =>
-                    $registro->supervisor_ape_materno ?? null,
-                'nume_doc' => $registro->supervisor_nume_doc ?? null,
-            ];
-
-            $registro->tecnico = (object) [
-                'id_persona' => $registro->id_tecnico ?? null,
-                'nombres' => $registro->tecnico_nombres ?? null,
-                'ape_paterno' =>
-                    $registro->tecnico_ape_paterno ?? null,
-                'ape_materno' =>
-                    $registro->tecnico_ape_materno ?? null,
-                'nume_doc' => $registro->tecnico_nume_doc ?? null,
-            ];
-
-            $registro->verificador = (object) [
-                'id_persona' => $registro->id_verificador ?? null,
-                'nombres' => $registro->verificador_nombres ?? null,
-                'ape_paterno' =>
-                    $registro->verificador_ape_paterno ?? null,
-                'ape_materno' =>
-                    $registro->verificador_ape_materno ?? null,
-                'nume_doc' => $registro->verificador_nume_doc ?? null,
-            ];
-
-            return $registro;
-        });
-
-        $logos = Institucion::query()->first();
-
-        $fileName = sprintf(
-            'individuales-sector-%s-manzana-%s.pdf',
-            trim($sector),
-            trim($manzana)
-        );
-
-        $mpdf = new \Mpdf\Mpdf([
-            'format' => [210, 297],
-
-            'margin_left' => 10,
-            'margin_right' => 10,
-            'margin_top' => 10,
-            'margin_bottom' => 10,
-            'margin_header' => 10,
-            'margin_footer' => 10,
-
-            'tempDir' => storage_path('app/mpdf-temp'),
-
-            'simpleTables' => true,
-            'packTableData' => true,
-        ]);
-
-        /*
-        * Se renderiza una sola vez.
-        * Ya no usamos chunk(5), por eso los estilos no se cortan.
-        */
-        $html = \View::make('pages.pdf.individuales', [
-            'sector' => $sector,
-            'manzana' => $manzana,
-            'tipo_ficha' => $tipo_ficha,
-            'fichas' => $fichas,
-            'logos' => $logos,
-        ])->render();
-
-        $mpdf->WriteHTML($html);
-
-        return response(
-            $mpdf->Output('', 'S'),
-            200,
-            [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' =>
-                    'attachment; filename="' . $fileName . '"',
-            ]
+    public function fichaIndividuales(Request $request)
+{
+    set_time_limit(0);
+
+    ini_set('max_execution_time', '0');
+    ini_set('memory_limit', '1024M');
+    ini_set('pcre.backtrack_limit', '10000000');
+    ini_set('pcre.recursion_limit', '1000000');
+
+    $sector = trim((string) $request->query('buscarSector'));
+    $manzana = trim((string) $request->query('buscarManzana'));
+    $tipoFicha = trim((string) $request->query('buscarTipo'));
+
+    if ($sector === '' || $manzana === '' || $tipoFicha === '') {
+        abort(
+            422,
+            'Debe seleccionar sector, manzana y tipo de ficha.'
         );
     }
+
+    $registros = DB::table(
+        'catastro.vw_fichas_individuales_pdf'
+    )
+        /*
+         * Los valores que llegan son los identificadores completos:
+         *
+         * sector:  08060101
+         * manzana: 08060101001
+         */
+        ->whereRaw('TRIM(id_sector) = ?', [$sector])
+        ->whereRaw('TRIM(id_mzna) = ?', [$manzana])
+        ->whereRaw('TRIM(tipo_ficha) = ?', [$tipoFicha])
+        ->orderBy('nume_ficha')
+        ->get();
+
+    if ($registros->isEmpty()) {
+        abort(
+            404,
+            'No existen fichas para el sector, manzana y tipo seleccionados.'
+        );
+    }
+
+    /*
+     * Temporalmente verifica cuántas fichas encontró.
+     * Debería mostrar 10 en tu caso.
+     */
+    dd([
+        'sector_recibido' => $sector,
+        'manzana_recibida' => $manzana,
+        'tipo_recibido' => $tipoFicha,
+        'cantidad' => $registros->count(),
+        'fichas' => $registros->pluck('nume_ficha'),
+    ]);
+}
         
     public function fichaEconomica(Ficha $ficha)
     {
