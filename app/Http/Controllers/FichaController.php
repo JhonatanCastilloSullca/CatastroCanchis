@@ -892,14 +892,23 @@ class FichaController extends Controller
         (string) $request->query('buscarTipo')
     );
 
-    $registros = DB::table(
-        'catastro.vw_fichas_individuales_pdf'
-    )
-        ->where('id_sector', $sector)
-        ->where('id_mzna', $manzana)
-        ->where('tipo_ficha', $tipoFicha)
-        ->orderBy('nume_ficha')
-        ->get();
+    $registros = DB::select(
+        '
+            SELECT *
+            FROM catastro.fn_fichas_individuales_pdf(
+                ?,
+                ?,
+                ?
+            )
+        ',
+        [
+            $sector,
+            $manzana,
+            $tipoFicha,
+        ]
+    );
+
+    $registros = collect($registros);
 
     dd([
         'cantidad' => $registros->count(),
