@@ -872,61 +872,40 @@ class FichaController extends Controller
         $mpdf->Output($fileName, 'I');
     }
 
-    public function fichaIndividuales(Request $request)
+  public function fichaIndividuales(Request $request)
 {
     set_time_limit(0);
 
     ini_set('max_execution_time', '0');
     ini_set('memory_limit', '1024M');
     ini_set('pcre.backtrack_limit', '10000000');
-    ini_set('pcre.recursion_limit', '1000000');
 
-    $sector = trim((string) $request->query('buscarSector'));
-    $manzana = trim((string) $request->query('buscarManzana'));
-    $tipoFicha = trim((string) $request->query('buscarTipo'));
+    $sector = trim(
+        (string) $request->query('buscarSector')
+    );
 
-    if ($sector === '' || $manzana === '' || $tipoFicha === '') {
-        abort(
-            422,
-            'Debe seleccionar sector, manzana y tipo de ficha.'
-        );
-    }
+    $manzana = trim(
+        (string) $request->query('buscarManzana')
+    );
+
+    $tipoFicha = trim(
+        (string) $request->query('buscarTipo')
+    );
 
     $registros = DB::table(
         'catastro.vw_fichas_individuales_pdf'
     )
-        /*
-         * Los valores que llegan son los identificadores completos:
-         *
-         * sector:  08060101
-         * manzana: 08060101001
-         */
-        ->whereRaw('TRIM(id_sector) = ?', [$sector])
-        ->whereRaw('TRIM(id_mzna) = ?', [$manzana])
-        ->whereRaw('TRIM(tipo_ficha) = ?', [$tipoFicha])
+        ->where('id_sector', $sector)
+        ->where('id_mzna', $manzana)
+        ->where('tipo_ficha', $tipoFicha)
         ->orderBy('nume_ficha')
         ->get();
 
-    if ($registros->isEmpty()) {
-        abort(
-            404,
-            'No existen fichas para el sector, manzana y tipo seleccionados.'
-        );
-    }
-
-    /*
-     * Temporalmente verifica cuántas fichas encontró.
-     * Debería mostrar 10 en tu caso.
-     */
     dd([
-        'sector_recibido' => $sector,
-        'manzana_recibida' => $manzana,
-        'tipo_recibido' => $tipoFicha,
         'cantidad' => $registros->count(),
         'fichas' => $registros->pluck('nume_ficha'),
     ]);
-}
-        
+}     
     public function fichaEconomica(Ficha $ficha)
     {
         $fileName = 'economica.pdf';
