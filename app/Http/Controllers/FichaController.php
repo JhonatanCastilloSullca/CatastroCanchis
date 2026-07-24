@@ -872,49 +872,49 @@ class FichaController extends Controller
         $mpdf->Output($fileName, 'I');
     }
 
-  public function fichaIndividuales(Request $request)
-{
-    set_time_limit(0);
+    public function fichaIndividuales(Request $request)
+    {
+        set_time_limit(0);
 
-    ini_set('max_execution_time', '0');
-    ini_set('memory_limit', '1024M');
-    ini_set('pcre.backtrack_limit', '10000000');
+        ini_set('max_execution_time', '0');
+        ini_set('memory_limit', '1024M');
+        ini_set('pcre.backtrack_limit', '10000000');
 
-    $sector = trim(
-        (string) $request->query('buscarSector')
-    );
+        $sector = trim(
+            (string) $request->query('buscarSector')
+        );
 
-    $manzana = trim(
-        (string) $request->query('buscarManzana')
-    );
+        $manzana = trim(
+            (string) $request->query('buscarManzana')
+        );
 
-    $tipoFicha = trim(
-        (string) $request->query('buscarTipo')
-    );
+        $tipoFicha = trim(
+            (string) $request->query('buscarTipo')
+        );
 
-    $registros = DB::select(
-        '
-            SELECT *
-            FROM catastro.fn_fichas_individuales_pdf(
-                ?,
-                ?,
-                ?
-            )
-        ',
-        [
-            $sector,
-            $manzana,
-            $tipoFicha,
-        ]
-    );
+        $registros = DB::select(
+            '
+                SELECT *
+                FROM catastro.fn_fichas_individuales_pdf(
+                    ?,
+                    ?,
+                    ?
+                )
+            ',
+            [
+                $sector,
+                $manzana,
+                $tipoFicha,
+            ]
+        );
 
-    $registros = collect($registros);
+        $registros = collect($registros);
 
-    dd([
-        'cantidad' => $registros->count(),
-        'fichas' => $registros->pluck('nume_ficha'),
-    ]);
-}     
+        dd([
+            'cantidad' => $registros->count(),
+            'fichas' => $registros->pluck('nume_ficha'),
+        ]);
+    }     
     public function fichaEconomica(Ficha $ficha)
     {
         $fileName = 'economica.pdf';

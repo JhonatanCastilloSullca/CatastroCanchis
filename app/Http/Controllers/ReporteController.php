@@ -181,17 +181,46 @@ class ReporteController extends Controller
 
     public function fichasmasivas(Request $request)
     {
-        $sectores = Sectore::orderBy('codi_sector', 'asc')->get();
-        $manzanas = Manzana::orderBy('codi_mzna', 'asc')->get();
-        $sector2 = $request->buscarSector;
-        $manzana2 = $request->buscarManzana;
-        $tipoficha = $request->buscarTipo;
-        if ($request->buscarSector != 0 && $request->buscarManzana != 0 && $request->buscarTipo != 0) {
-            if ($request->buscarSector != "" && $request->buscarManzana != "" && $request->buscarTipo != "") {
-                $this->fichaIndividuales($sector2, $manzana2, $tipoficha);
-            }
-        }
-        return view('pages.reporte.fichasmasivas', compact('sectores', 'manzanas', 'sector2', 'manzana2', 'tipoficha'));
+        set_time_limit(0);
+
+        ini_set('max_execution_time', '0');
+        ini_set('memory_limit', '1024M');
+        ini_set('pcre.backtrack_limit', '10000000');
+
+        $sector = trim(
+            (string) $request->query('buscarSector')
+        );
+
+        $manzana = trim(
+            (string) $request->query('buscarManzana')
+        );
+
+        $tipoFicha = trim(
+            (string) $request->query('buscarTipo')
+        );
+
+        $registros = DB::select(
+            '
+                SELECT *
+                FROM catastro.fn_fichas_individuales_pdf(
+                    ?,
+                    ?,
+                    ?
+                )
+            ',
+            [
+                $sector,
+                $manzana,
+                $tipoFicha,
+            ]
+        );
+
+        $registros = collect($registros);
+
+        dd([
+            'cantidad' => $registros->count(),
+            'fichas' => $registros->pluck('nume_ficha'),
+        ]);
     }
 
     public function fichaIndividuales($sector, $manzana, $tipo_ficha)
