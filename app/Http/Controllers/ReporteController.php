@@ -193,7 +193,7 @@ class ReporteController extends Controller
             ->orderBy('codi_mzna')
             ->get();
 
-        return view('pages.reportes.fichasmasivas', [
+        return view('pages.reporte.fichasmasivas', [
             'sectores' => $sectores,
             'manzanas' => $manzanas,
             'sector2' => $sector2,
