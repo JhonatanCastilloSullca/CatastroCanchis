@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Manzana;
 use App\Models\Sectore;
 use App\Models\Edificaciones;
+use App\Models\Ficha;
 use App\Models\Lote;
 use App\Models\Puerta;
 use App\Models\UniCat;
