@@ -7,6 +7,7 @@ use App\Models\Manzana;
 use App\Models\Sectore;
 use App\Models\Edificaciones;
 use App\Models\Lote;
+use App\Models\Puerta;
 use App\Models\UniCat;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -73,6 +74,18 @@ class ManzanaController extends Controller
             $lote->codi_lote = $lote->codi_lote;
             $lote->id_mzna = $manzana->id_mzna;
             $lote->save();
+            foreach($lote->puertas as $puerta)
+            {
+                $valor = $puerta->id_puerta;
+
+                $resultado = substr($valor, 15);
+                $buscarPuerta = Puerta::where('id_puerta',$lote->id_lote.''.$puerta->codi_puerta.''.$resultado)->first();
+                if(!$buscarPuerta){
+                    $puerta->id_puerta = $lote->id_lote.''.$puerta->codi_puerta.''.$resultado;
+                    $puerta->id_lote = $manzana->id_mzna.''.$lote->codi_lote;
+                    $puerta->save();
+                }
+            }
             foreach($edificaciones as $edificacion)
             {
                 $edif_ant = $lote_ant.''.$edificacion->codi_edificacion;
@@ -97,9 +110,7 @@ class ManzanaController extends Controller
                 }
             }
         }
-
-
-        return redirect()->back()->with('success','Manzana Modificado Correctamente!');
+        return redirect()->back()->with('success', 'Manzana Modificado Correctamente!');
     }
 
     public function destroy(Request $request)
