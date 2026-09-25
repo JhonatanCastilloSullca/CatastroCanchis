@@ -5,13 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Manzana;
 use App\Models\Sectore;
-use App\Models\Edificaciones;
-use App\Models\Ficha;
-use App\Models\Lote;
-use App\Models\Puerta;
-use App\Models\UniCat;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rule;
+use App\Services\RenumerarManzanaService;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 
 class ManzanaController extends Controller
 {
@@ -47,70 +44,35 @@ class ManzanaController extends Controller
     }
     public function update(Request $request)
     {
-
-        $manzana=Manzana::where('codi_mzna',$request->id_manzana)->where('id_sector',$request->id_sector)->first();
-        $id=str_pad($manzana->id_mzna,11,'0',STR_PAD_LEFT);
-        $requ=\Validator::make($request->all(), [
-            'id_sector' => 'required',
-            'codi_mzna' => ['required','max:3'],
-            'nume_mzna' => 'required|max:15',
+        $validator = \Validator::make($request->all(), [
+            'id_sector' => ['required', 'regex:/^[0-9]{8}$/', 'exists:tf_sectores,id_sector'],
+            'id_manzana' => ['required', 'regex:/^[0-9]{1,3}$/'],
+            'codi_mzna' => ['required', 'regex:/^[0-9]{1,3}$/'],
+            'nume_mzna' => ['required', 'string', 'max:15'],
         ]);
-        if ($requ->fails())
-        {
-            return Redirect::back()->with('error_code', 5)->withErrors($requ->errors())->withInput();
+
+        if ($validator->fails()) {
+            return Redirect::back()->with('error_code', 5)->withErrors($validator)->withInput();
         }
 
-        $id_mzna_ant = $manzana->id_mzna;
-        $manzana->id_mzna      = $request->id_sector.''.str_pad($request->codi_mzna,3,'0',STR_PAD_LEFT);
-        $manzana->id_sector    = $request->id_sector;
-        $manzana->codi_mzna    = str_pad($request->codi_mzna,3,'0',STR_PAD_LEFT);
-        $manzana->nume_mzna    = strtoupper($request->nume_mzna);
-        $lotes = Lote::where('id_mzna',$id_mzna_ant)->get();
-        $manzana->save();
-        foreach($lotes as $lote)
-        {
-            $lote_ant = $id_mzna_ant.''.$lote->codi_lote;
-            $edificaciones = Edificaciones::where('id_lote', $lote_ant)->get();
-            $lote->id_lote = $manzana->id_mzna.''.$lote->codi_lote;
-            $lote->codi_lote = $lote->codi_lote;
-            $lote->id_mzna = $manzana->id_mzna;
-            $lote->save();
-            foreach($lote->puertas as $puerta)
-            {
-                $valor = $puerta->id_puerta;
+        $datos = $validator->validated();
+        try {
+            app(RenumerarManzanaService::class)->ejecutar(
+                (string) $datos['id_sector'],
+                (string) $datos['id_manzana'],
+                (string) $datos['codi_mzna'],
+                $datos['nume_mzna']
+            );
+        } catch (ValidationException $exception) {
+            return Redirect::back()->with('error_code', 5)->withErrors($exception->errors())->withInput();
+        } catch (QueryException $exception) {
+            report($exception);
 
-                $resultado = substr($valor, 15);
-                $buscarPuerta = Puerta::where('id_puerta',$lote->id_lote.''.$puerta->codi_puerta.''.$resultado)->first();
-                if(!$buscarPuerta){
-                    $puerta->id_puerta = $lote->id_lote.''.$puerta->codi_puerta.''.$resultado;
-                    $puerta->id_lote = $manzana->id_mzna.''.$lote->codi_lote;
-                    $puerta->save();
-                }
-            }
-            foreach($edificaciones as $edificacion)
-            {
-                $edif_ant = $lote_ant.''.$edificacion->codi_edificacion;
-                $unicats = UniCat::where('id_lote', $lote_ant)->where('id_edificacion',$edif_ant)->get();
-                $edificacion->id_edificacion = $lote->id_lote.''.$edificacion->codi_edificacion;
-                $edificacion->codi_edificacion = $edificacion->codi_edificacion;
-                $edificacion->id_lote = $lote->id_lote;
-                $edificacion->save();
-                foreach($unicats as $unicat)
-                {
-                    $unicat->id_uni_cat = $edificacion->id_edificacion.''.$unicat->codi_entrada.''.$unicat->codi_piso.''.$unicat->codi_unidad;
-                    $unicat->id_edificacion = $edificacion->id_edificacion;
-                    $unicat->id_lote = $lote->id_lote;
-                    $unicat->save();
-
-                    $suma = array_sum(str_split($unicat->id_uni_cat)); 
-                    $dc   = $suma % 9;
-
-                    Ficha::where('id_uni_cat', $unicat->id_uni_cat)->update([
-                        'dc' => $dc,
-                    ]);
-                }
-            }
+            return Redirect::back()->with('error_code', 5)->withErrors([
+                'codi_mzna' => 'No se pudo completar la renumeración. No se guardó ningún cambio. Revise las relaciones y los códigos de destino.',
+            ])->withInput();
         }
+
         return redirect()->back()->with('success', 'Manzana Modificado Correctamente!');
     }
 

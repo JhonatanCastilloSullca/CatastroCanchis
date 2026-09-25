@@ -2,6 +2,8 @@
 
 namespace App\Http\Livewire;
 
+use App\Services\UbicacionCatastralResolver;
+
 use Livewire\Component;
 use App\Models\Sectore;
 use App\Models\UsosBc;
@@ -1113,6 +1115,9 @@ class FichaBienComunEdit extends Component
 
 
             DB::beginTransaction();
+            $ubicacionResolver = app(UbicacionCatastralResolver::class);
+            $unidadAnterior = $this->fichaanterior->unicat;
+            $loteAnterior = $unidadAnterior?->id_lote ?? $this->fichaanterior->id_lote;
             $ubigeo=Institucion::first();
             $mytime= Carbon::now('America/Lima');
 
@@ -1187,9 +1192,8 @@ class FichaBienComunEdit extends Component
                 $mzna->save();
             }
 
-            $lotebuscar=str_pad($ubigeo->id_institucion,6,'0',STR_PAD_LEFT).''.str_pad($this->sector,2,'0',STR_PAD_LEFT).''.str_pad($this->mzna,3,'0',STR_PAD_LEFT).''.str_pad($this->lote,3,'0',STR_PAD_LEFT);
 
-            $loteencontrar=Lote::where('id_lote',$lotebuscar)->first();
+            $loteencontrar=$ubicacionResolver->lote($mznabuscar, (string) $this->lote, $loteAnterior);
             if($loteencontrar!=""){
                 $lote=$loteencontrar;
                 $lote->id_mzna=str_pad($ubigeo->id_institucion,6,'0',STR_PAD_LEFT).''.str_pad($this->sector,2,'0',STR_PAD_LEFT).''.str_pad($this->mzna,3,'0',STR_PAD_LEFT);
@@ -1217,9 +1221,8 @@ class FichaBienComunEdit extends Component
                 $lote->save();
             }
 
-            $edificacionbuscar=str_pad($lote->id_lote,14,'0',STR_PAD_LEFT).''.str_pad($this->edifica,2,'0',STR_PAD_LEFT);
 
-            $edificacionencontrar=Edificaciones::where('id_edificacion',$edificacionbuscar)->first();
+            $edificacionencontrar=$ubicacionResolver->edificacion($lote->id_lote, (string) $this->edifica, $unidadAnterior?->id_edificacion);
             if($edificacionencontrar!=""){
                 $edificacion=$edificacionencontrar;
                 $edificacion->codi_edificacion=str_pad($this->edifica,2,'0',STR_PAD_LEFT);
@@ -1238,8 +1241,7 @@ class FichaBienComunEdit extends Component
                 $edificacion->save();
             }
 
-            $unicatbuscar=str_pad($edificacion->id_edificacion,16,'0',STR_PAD_LEFT).''.str_pad($this->entrada,2,'0',STR_PAD_LEFT).''.str_pad($this->piso,2,'0',STR_PAD_LEFT).''.str_pad($this->unidad,3,'0',STR_PAD_LEFT);
-            $unicatencontrar=UniCat::where('id_uni_cat',$unicatbuscar)->first();
+            $unicatencontrar=$ubicacionResolver->unidad($lote->id_lote, $edificacion->id_edificacion, (string) $this->entrada, (string) $this->piso, (string) $this->unidad, $this->fichaanterior->id_uni_cat);
             if($unicatencontrar!=""){
                 
 
@@ -1808,8 +1810,9 @@ class FichaBienComunEdit extends Component
             }
             DB::commit();
         }
-        catch(Exception $e){
+        catch (\Throwable $e) {
             DB::rollBack();
+            throw $e;
         }
         return redirect()->route('reporte.reportelista')
         ->with('success', 'Ficha Bien Comun Editado Correctamente.');

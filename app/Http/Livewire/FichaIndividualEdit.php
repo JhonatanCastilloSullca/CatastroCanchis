@@ -2,6 +2,8 @@
 
 namespace App\Http\Livewire;
 
+use App\Services\UbicacionCatastralResolver;
+
 use App\Models\Archivo;
 use Livewire\Component;
 use Intervention\Image\Facades\Image;
@@ -1506,6 +1508,9 @@ class FichaIndividualEdit extends Component
         
         try {
             DB::beginTransaction();
+            $ubicacionResolver = app(UbicacionCatastralResolver::class);
+            $unidadAnterior = $this->fichaanterior->unicat;
+            $loteAnterior = $unidadAnterior?->id_lote ?? $this->fichaanterior->id_lote;
             $ubigeo = Institucion::first();
             /*VALIDACIONES*/
             $id = $this->fichaanterior->fichaindividual->id_ficha;
@@ -1854,9 +1859,8 @@ class FichaIndividualEdit extends Component
                 $mzna->save();
             }
 
-            $lotebuscar = str_pad($ubigeo->id_institucion, 6, '0', STR_PAD_LEFT) . '' . str_pad($this->sector, 2, '0', STR_PAD_LEFT) . '' . str_pad($this->mzna, 3, '0', STR_PAD_LEFT) . '' . str_pad($this->lote, 3, '0', STR_PAD_LEFT);
 
-            $loteencontrar = Lote::where('id_lote', $lotebuscar)->first();
+            $loteencontrar = $ubicacionResolver->lote($mznabuscar, (string) $this->lote, $loteAnterior);
             if ($loteencontrar != "") {
                 $lote = $loteencontrar;
                 
@@ -1884,9 +1888,8 @@ class FichaIndividualEdit extends Component
                 $lote->save();
             }
 
-            $edificacionbuscar = str_pad($lote->id_lote, 14, '0', STR_PAD_LEFT) . '' . str_pad($this->edifica, 2, '0', STR_PAD_LEFT);
 
-            $edificacionencontrar = Edificaciones::where('id_edificacion', $edificacionbuscar)->first();
+            $edificacionencontrar = $ubicacionResolver->edificacion($lote->id_lote, (string) $this->edifica, $unidadAnterior?->id_edificacion);
             
             if ($edificacionencontrar != "") {
                 $edificacion = $edificacionencontrar;
@@ -1904,8 +1907,7 @@ class FichaIndividualEdit extends Component
                 $edificacion->save();
             }
 
-            $unicatbuscar = str_pad($edificacion->id_edificacion, 16, '0', STR_PAD_LEFT) . '' . str_pad($this->entrada, 2, '0', STR_PAD_LEFT) . '' . str_pad($this->piso, 2, '0', STR_PAD_LEFT) . '' . str_pad($this->unidad, 3, '0', STR_PAD_LEFT);
-            $unicatencontrar = UniCat::where('id_uni_cat', $unicatbuscar)->first();
+            $unicatencontrar = $ubicacionResolver->unidad($lote->id_lote, $edificacion->id_edificacion, (string) $this->entrada, (string) $this->piso, (string) $this->unidad, $this->fichaanterior->id_uni_cat);
             if ($unicatencontrar != "") {
                 $unicat = $unicatencontrar;
                 $unicat->codi_entrada = str_pad($this->entrada, 2, '0', STR_PAD_LEFT);
@@ -3016,8 +3018,9 @@ class FichaIndividualEdit extends Component
 
 
             DB::commit();
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
+            throw $e;
         }
 
         return redirect()->route('reporte.reportelista')

@@ -2,6 +2,8 @@
 
 namespace App\Http\Livewire;
 
+use App\Services\UbicacionCatastralResolver;
+
 use Livewire\Component;
 use App\Models\Actividades;
 use Illuminate\Support\Facades\Http;
@@ -442,6 +444,9 @@ class FichaEconomicaEdit extends Component
         try
         {
             DB::beginTransaction();
+            $ubicacionResolver = app(UbicacionCatastralResolver::class);
+            $unidadAnterior = $this->fichaanterior->unicat;
+            $loteAnterior = $unidadAnterior?->id_lote ?? $this->fichaanterior->id_lote;
             $ubigeo=Institucion::first();
             $mytime= Carbon::now('America/Lima');
             $date = $mytime?->format('Y');
@@ -611,9 +616,8 @@ class FichaEconomicaEdit extends Component
                 $mzna->save();
             }
 
-            $lotebuscar=str_pad($ubigeo?->id_institucion,6,'0',STR_PAD_LEFT).''.str_pad($this->sector,2,'0',STR_PAD_LEFT).''.str_pad($this->mzna,3,'0',STR_PAD_LEFT).''.str_pad($this->lote,3,'0',STR_PAD_LEFT);
 
-            $loteencontrar=Lote::where('id_lote',$lotebuscar)?->first();
+            $loteencontrar=$ubicacionResolver->lote($mznabuscar, (string) $this->lote, $loteAnterior);
             if($loteencontrar!=""){
                 $lote=$loteencontrar;
                 $lote->codi_lote=str_pad($this->lote,3,'0',STR_PAD_LEFT);
@@ -626,9 +630,8 @@ class FichaEconomicaEdit extends Component
                 $lote->save();
             }
 
-            $edificacionbuscar=str_pad($lote->id_lote,14,'0',STR_PAD_LEFT).''.str_pad($this->edifica,2,'0',STR_PAD_LEFT);
 
-            $edificacionencontrar=Edificaciones::where('id_edificacion',$edificacionbuscar)?->first();
+            $edificacionencontrar=$ubicacionResolver->edificacion($lote->id_lote, (string) $this->edifica, $unidadAnterior?->id_edificacion);
             if($edificacionencontrar!=""){
                 $edificacion=$edificacionencontrar;
             }else{
@@ -639,8 +642,7 @@ class FichaEconomicaEdit extends Component
                 $edificacion->save();
             }
 
-            $unicatbuscar=str_pad($edificacion->id_edificacion,16,'0',STR_PAD_LEFT).''.str_pad($this->entrada,2,'0',STR_PAD_LEFT).''.str_pad($this->piso,2,'0',STR_PAD_LEFT).''.str_pad($this->unidad,3,'0',STR_PAD_LEFT);
-            $unicatencontrar=UniCat::where('id_uni_cat',$unicatbuscar)?->first();
+            $unicatencontrar=$ubicacionResolver->unidad($lote->id_lote, $edificacion->id_edificacion, (string) $this->entrada, (string) $this->piso, (string) $this->unidad, $this->fichaanterior->id_uni_cat);
             if($unicatencontrar!=""){
                 $unicat=$unicatencontrar;
                 $unicat->codi_entrada=str_pad($this->entrada,2,'0',STR_PAD_LEFT);
@@ -1169,8 +1171,9 @@ class FichaEconomicaEdit extends Component
 
             DB::commit();
         }
-        catch(Exception $e){
+        catch (\Throwable $e) {
             DB::rollBack();
+            throw $e;
         }
 
         return redirect()->route('reporte.reportelista')
