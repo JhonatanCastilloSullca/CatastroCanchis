@@ -19,20 +19,21 @@ class CucImport implements OnEachRow, WithHeadingRow, WithBatchInserts, WithChun
 
     public function onRow(Row $row)
     {
-        $uni_cat = UniCat::find($row['cod_referencia']);
-        if($uni_cat)
-        {  
-            $uni_cat->cuc = $row['cuc'];
-            $uni_cat->save();
+        $cuc = preg_replace('/\D/', '', $row['cuc']);
 
-            $fichas = Ficha::where('id_uni_cat',$row['cod_referencia'])->get();
-            if($fichas){
-                foreach($fichas as $ficha){
-                    $ficha->cuc = $row['cuc'];
-                    $ficha->save();
-                }
-            }
+    $uni_cat = UniCat::find($row['cod_referencia']);
+
+    if ($uni_cat) {
+        $uni_cat->cuc = $cuc;
+        $uni_cat->save();
+
+        $fichas = Ficha::where('id_uni_cat', $row['cod_referencia'])->get();
+
+        foreach ($fichas as $ficha) {
+            $ficha->cuc = $cuc;
+            $ficha->save();
         }
+    }
         
     }
 
